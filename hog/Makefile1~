@@ -1,0 +1,6 @@
+solve:
+	make all
+	./build/bin/task2 -d ./data/multiclass/train_labels.txt -m model.txt --train
+	./build/bin/task2 -d ./data/multiclass/train_labels.txt -m model.txt -l predictions.txt --predict
+	 python ./compare.py ./data/multiclass/train_labels.txt ./predictions.txt
+
