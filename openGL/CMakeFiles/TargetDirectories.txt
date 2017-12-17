@@ -1,0 +1,3 @@
+/home/ruslan/code/CG/openGL/CMakeFiles/rebuild_cache.dir
+/home/ruslan/code/CG/openGL/CMakeFiles/edit_cache.dir
+/home/ruslan/code/CG/openGL/CMakeFiles/main.dir

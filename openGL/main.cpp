@@ -2,9 +2,15 @@
 #include "common.h"
 #include "ShaderProgram.h"
 #include "Camera.h"
+#include <cmath>
 
 //External dependencies
 #define GLFW_DLL
+#define Areaup(x, y) Val(Area, x - s / 2, y)
+#define Areadown(x, y) Val(Area, x + s / 2, y)
+#define Arealeft(x, y) Val(Area, x, y - s / 2)
+#define Arearight(x, y) Val(Area, x, y + s / 2)
+
 #include <GLFW/glfw3.h>
 #include <random>
 
@@ -19,7 +25,93 @@ static bool g_capturedMouseJustNow = false;
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
-Camera camera(float3(0.0f, 5.0f, 30.0f));
+Camera camera(float3(0.0f, 5.0f, 3.0f));
+
+float Val(std::vector<std::vector<float> >&Area, int i, int j) 
+{
+  int n = Area.size();
+  int m = Area[0].size();
+  if (i < 0 || i > n - 1 || j < 0 || j > m - 1) return 0;
+  return Area[i][j];
+}
+
+float Generate(float a1, float a2, float a3, float a4)
+{
+  float R = 1;
+  return (a1 + a2 + a3 + a4) / 4 + ((rand() + 0.0) / RAND_MAX) * R;
+}
+
+
+void Land_MakeHill(std::vector<std::vector<float>> &data, int px, int pz, float height, int Rad ) 
+{ 
+  int size = data.size();
+  for(int i=0;i<size;i++){
+    for(int w=0;w<size;w++){
+//Чем дальше точка от центра, тем меньше значение
+      float r2 = ((px - i) * (px - i) + (pz - w) * (pz - w));
+      float d = exp(-r2 / 10000); 
+      data[i][w]+=d*height;
+    }
+  }
+}
+
+
+void Landscape(std::vector<std::vector<float>>& Area) 
+{
+  int rows = Area.size();
+  int cols = Area[0].size();
+  int i, j, start_i, start_j;
+  int s = Area.size() - 1; //square size
+  std::cout << 1; fflush(NULL);
+  int H_hills = 50;
+  int R_hills = 100;
+
+  Area[0][0] = 0;
+  Area[0][s] = 70;
+  Area[s][0] = 40;
+  Area[s][s] = 30; 
+
+  
+  while(s > 1) 
+  {
+    for(i = 0; i < rows / s; i++) 
+    {
+      for(j = 0; j < cols / s; j++) 
+      {
+        start_i = s * i;
+        start_j = s * j;
+        Area[s / 2 + start_i][s / 2 + start_j] = Generate(Area[start_i][start_j], Area[s + start_i][start_j], Area[start_i][start_j + s], Area[start_i + s][s + start_j]);
+      }
+    }
+    for(i = 0; i < rows / s; i++) 
+    {
+      for(j = 0; j < cols / s; j++)
+      { 
+        start_i = s * i;
+        start_j = s * j;
+        Area[start_i + s / 2][start_j] = Generate(Areaup(start_i + s / 2, start_j), Areadown(start_i + s / 2, start_j), \
+          Arearight(start_i + s / 2, start_j), Arealeft(start_i + s / 2, start_j));
+
+        Area[start_i][start_j + s / 2] = Generate(Areaup(start_i, start_j + s / 2), Areadown(start_i, start_j + s / 2), \
+          Arearight(start_i, start_j + s / 2), Arealeft(start_i, start_j + s / 2));
+        
+        Area[start_i + s][start_j + s / 2] = Generate(Areaup(start_i + s, start_j + s / 2), Areadown(start_i + s, start_j + s / 2), \
+          Arearight(start_i + s, start_j + s / 2), Arealeft(start_i + s, start_j + s / 2));
+        
+        Area[start_i + s / 2][start_j + s] = Generate(Areaup(start_i + s / 2, start_j + s), Areadown(start_i + s / 2, start_j + s), \
+          Arearight(start_i + s / 2, start_j + s), Arealeft(start_i + s / 2, start_j + s));
+      }  
+      
+    }
+    s /= 2;
+  }
+  
+  for(int i = 0; i < 30; i++) Land_MakeHill(Area, rand() % rows, rand() % cols, rand() % H_hills,  rand() % R_hills);
+  float m = 0;
+  for(auto &a: Area) for (auto &b: a) m = b > m? b : m;
+  for(auto &a: Area) for (auto &b: a) {b /= m; b = sqrt(b); b *= 100; }
+
+}
 
 //функция для обработки нажатий на кнопки клавиатуры
 void OnKeyboardPressed(GLFWwindow* window, int key, int scancode, int action, int mode)
@@ -144,7 +236,9 @@ static int createTriStrip(int rows, int cols, float size, GLuint &vao)
 
   std::vector<GLuint> indices_vec; //вектор индексов вершин для передачи шейдерной программе
   indices_vec.reserve(numIndices);
-
+  std::vector<std::vector<float>> Area; Area.resize(rows);
+  for(auto &a: Area) a = std::vector<float>(cols, 0.0);
+  Landscape(Area);
   for (int z = 0; z < rows; ++z)
   {
     for (int x = 0; x < cols; ++x)
@@ -152,14 +246,17 @@ static int createTriStrip(int rows, int cols, float size, GLuint &vao)
       //вычисляем координаты каждой из вершин 
       float xx = -size / 2 + x*size / cols;
       float zz = -size / 2 + z*size / rows;
-      // float yy = -1.0f;
-      float r = sqrt(xx*xx + zz*zz);
-      float yy = 5.0f * (r != 0.0f ? sin(r) / r : 1.0f);
+      float yy = sqrt(Area[z][x]);
 
       vertices_vec.push_back(xx);
       vertices_vec.push_back(yy);
       vertices_vec.push_back(zz);
-
+    }
+  }
+  for (int z = 0; z < rows; ++z)
+  {
+    for (int x = 0; x < cols; ++x)
+    { 
       texcoords_vec.push_back(x / float(cols - 1)); // вычисляем первую текстурную координату u, для плоскости это просто относительное положение вершины
       texcoords_vec.push_back(z / float(rows - 1)); // аналогично вычисляем вторую текстурную координату v
     }
@@ -281,6 +378,7 @@ static int createTriStrip(int rows, int cols, float size, GLuint &vao)
   {
 
     //передаем в шейдерную программу атрибут координат вершин
+
     glBindBuffer(GL_ARRAY_BUFFER, vboVertices); GL_CHECK_ERRORS;
     glBufferData(GL_ARRAY_BUFFER, vertices_vec.size() * sizeof(GL_FLOAT), &vertices_vec[0], GL_STATIC_DRAW); GL_CHECK_ERRORS;
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GL_FLOAT), (GLvoid*)0); GL_CHECK_ERRORS;
@@ -386,8 +484,9 @@ int main(int argc, char** argv)
   
   //Создаем и загружаем геометрию поверхности
   GLuint vaoTriStrip;
-  int triStripIndices = createTriStrip(100, 100, 40, vaoTriStrip);
+  int SZ = 512;
 
+  int triStripIndices = createTriStrip(SZ + 1, SZ + 1, 40, vaoTriStrip);
 
   glViewport(0, 0, WIDTH, HEIGHT);  GL_CHECK_ERRORS;
   glEnable(GL_DEPTH_TEST);  GL_CHECK_ERRORS;
