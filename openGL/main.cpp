@@ -14,7 +14,7 @@
 #include <GLFW/glfw3.h>
 #include <random>
 
-static const GLsizei WIDTH = 512, HEIGHT = 512; //размеры окна
+static const GLsizei WIDTH = 1024, HEIGHT = 1024; //размеры окна
 static int filling = 0;
 static bool keys[1024]; //массив состояний кнопок - нажата/не нажата
 static GLfloat lastX = 400, lastY = 300; //исходное положение мыши
@@ -25,19 +25,19 @@ static bool g_capturedMouseJustNow = false;
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
-Camera camera(float3(0.0f, 5.0f, 3.0f));
+Camera camera(float3(0.0f, 30.0f, 3.0f));
 
 float Val(std::vector<std::vector<float> >&Area, int i, int j) 
 {
   int n = Area.size();
   int m = Area[0].size();
-  if (i < 0 || i > n - 1 || j < 0 || j > m - 1) return 0;
+  if (i < 0 || i > n - 1 || j < 0 || j > m - 1) return 100;
   return Area[i][j];
 }
 
 float Generate(float a1, float a2, float a3, float a4)
 {
-  float R = 1;
+  float R = 0.2;
   return (a1 + a2 + a3 + a4) / 4 + ((rand() + 0.0) / RAND_MAX) * R;
 }
 
@@ -49,23 +49,27 @@ void Land_MakeHill(std::vector<std::vector<float>> &data, int px, int pz, float 
     for(int w=0;w<size;w++){
 //Чем дальше точка от центра, тем меньше значение
       float r2 = ((px - i) * (px - i) + (pz - w) * (pz - w));
-      float d = exp(-r2 / 10000); 
+      float d = exp(-r2 / 400); 
       data[i][w]+=d*height;
     }
   }
 }
 
+void Water(std::vector<std::vector<float>>& Area, float mid) 
+{
+  for(auto &a: Area) for (auto &b: a) b = mid;
+}
 
-void Landscape(std::vector<std::vector<float>>& Area) 
+float Landscape(std::vector<std::vector<float>>& Area) 
 {
   int rows = Area.size();
   int cols = Area[0].size();
   int i, j, start_i, start_j;
   int s = Area.size() - 1; //square size
-  std::cout << 1; fflush(NULL);
-  int H_hills = 50;
-  int R_hills = 100;
-
+  int H_hills = 150;
+  int R_hills = 80;
+  int N_hills = 50;
+  int D_pits = 10;
   Area[0][0] = 0;
   Area[0][s] = 70;
   Area[s][0] = 40;
@@ -106,10 +110,18 @@ void Landscape(std::vector<std::vector<float>>& Area)
     s /= 2;
   }
   
-  for(int i = 0; i < 30; i++) Land_MakeHill(Area, rand() % rows, rand() % cols, rand() % H_hills,  rand() % R_hills);
+  for(int i = 0; i < N_hills; i++) Land_MakeHill(Area, rand() % rows, rand() % cols, rand() % H_hills,  rand() % R_hills);
+  for(auto &a: Area) for (auto &b: a) b += D_pits + 1;
+  for(int i = 0; i < N_hills; i++) Land_MakeHill(Area, rand() % rows, rand() % cols, -(rand() % D_pits),  rand() % R_hills);
+  for(auto &a: Area) for (auto &b: a) b -= D_pits + 1;
   float m = 0;
-  for(auto &a: Area) for (auto &b: a) m = b > m? b : m;
-  for(auto &a: Area) for (auto &b: a) {b /= m; b = sqrt(b); b *= 100; }
+  float mid = 0;
+  for(auto &a: Area) for (auto &b: a) {m = b > m? b : m;}
+  
+  for(auto &a: Area) for (auto &b: a) {b /= m; b += 1; b = sqrt(b); b -= 1; b *= 150;}
+  for(auto &a: Area) for (auto &b: a) mid += b;
+  mid /= (rows * cols); std::cout << std::endl << mid << std::endl;
+  return mid;
 
 }
 
@@ -118,7 +130,7 @@ void OnKeyboardPressed(GLFWwindow* window, int key, int scancode, int action, in
 {
 	//std::cout << key << std::endl;
 	switch (key)
-	{
+	{ 
 	case GLFW_KEY_ESCAPE: //на Esc выходим из программы
 		if (action == GLFW_PRESS)
 			glfwSetWindowShouldClose(window, GL_TRUE);
@@ -215,9 +227,8 @@ void doCameraMovement(Camera &camera, GLfloat deltaTime)
 \param size - размер плоскости
 \param vao - vertex array object, связанный с созданной плоскостью
 */
-static int createTriStrip(int rows, int cols, float size, GLuint &vao)
+static int createTriStrip(int rows, int cols, float size, GLuint &vao, int mode, float & mid)
 {
-
   int numIndices = 2 * cols*(rows - 1) + rows - 1;
 
   std::vector<GLfloat> vertices_vec; //вектор атрибута координат вершин
@@ -238,7 +249,8 @@ static int createTriStrip(int rows, int cols, float size, GLuint &vao)
   indices_vec.reserve(numIndices);
   std::vector<std::vector<float>> Area; Area.resize(rows);
   for(auto &a: Area) a = std::vector<float>(cols, 0.0);
-  Landscape(Area);
+  if (mode == 1) mid = Landscape(Area);
+  else Water(Area, mid);
   for (int z = 0; z < rows; ++z)
   {
     for (int x = 0; x < cols; ++x)
@@ -477,21 +489,22 @@ int main(int argc, char** argv)
 	//создание шейдерной программы из двух файлов с исходниками шейдеров
 	//используется класс-обертка ShaderProgram
 	std::unordered_map<GLenum, std::string> shaders;
-	shaders[GL_VERTEX_SHADER]   = "vertex.glsl";
-	shaders[GL_FRAGMENT_SHADER] = "fragment.glsl";
+	shaders[GL_VERTEX_SHADER]   = "shaders/vertex.glsl";
+	shaders[GL_FRAGMENT_SHADER] = "shaders/fragment.glsl";
 	ShaderProgram program(shaders); GL_CHECK_ERRORS;
 
   
   //Создаем и загружаем геометрию поверхности
   GLuint vaoTriStrip;
-  int SZ = 512;
-
-  int triStripIndices = createTriStrip(SZ + 1, SZ + 1, 40, vaoTriStrip);
+  GLuint vaoWater;
+  int SZ = 256;
+  float mid;
+  int triStripIndices = createTriStrip(SZ + 1, SZ + 1, 40, vaoTriStrip, 1, mid);
+  int waterStripIndices = createTriStrip(SZ + 1, SZ + 1, 40, vaoWater, 2, mid);
 
   glViewport(0, 0, WIDTH, HEIGHT);  GL_CHECK_ERRORS;
   glEnable(GL_DEPTH_TEST);  GL_CHECK_ERRORS;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	//цикл обработки сообщений и отрисовки сцены каждый кадр
 	while (!glfwWindowShouldClose(window))
 	{
@@ -504,7 +517,7 @@ int main(int argc, char** argv)
     doCameraMovement(camera, deltaTime);
 
 		//очищаем экран каждый кадр
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f); GL_CHECK_ERRORS;
+		glClearColor(0.5f, 0.65f, 1.0f, 1.0f); GL_CHECK_ERRORS;
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); GL_CHECK_ERRORS;
 
     program.StartUseShader(); GL_CHECK_ERRORS;
@@ -524,8 +537,12 @@ int main(int argc, char** argv)
     program.SetUniform("model",      model);
 
     //рисуем плоскость
+
     glBindVertexArray(vaoTriStrip);
-    glDrawElements(GL_TRIANGLE_STRIP, triStripIndices, GL_UNSIGNED_INT, nullptr); GL_CHECK_ERRORS;
+    glDrawElements(GL_TRIANGLE_STRIP, triStripIndices, GL_UNSIGNED_INT, nullptr); 
+    glBindVertexArray(vaoWater);
+    glDrawElements(GL_TRIANGLE_STRIP, triStripIndices, GL_UNSIGNED_INT, nullptr);
+    GL_CHECK_ERRORS;
     glBindVertexArray(0); GL_CHECK_ERRORS;
 
     program.StopUseShader();
