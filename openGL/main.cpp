@@ -31,7 +31,7 @@ float Val(std::vector<std::vector<float> >&Area, int i, int j)
 {
   int n = Area.size();
   int m = Area[0].size();
-  if (i < 0 || i > n - 1 || j < 0 || j > m - 1) return 100;
+  if (i < 0 || i > n - 1 || j < 0 || j > m - 1) return 200;
   return Area[i][j];
 }
 
@@ -493,6 +493,12 @@ int main(int argc, char** argv)
 	shaders[GL_FRAGMENT_SHADER] = "shaders/fragment.glsl";
 	ShaderProgram program(shaders); GL_CHECK_ERRORS;
 
+  std::unordered_map<GLenum, std::string> watersh;
+  watersh[GL_VERTEX_SHADER]   = "shaders/water.vert";
+  watersh[GL_FRAGMENT_SHADER] = "shaders/water.frag";
+  ShaderProgram water(watersh); GL_CHECK_ERRORS;
+
+
   
   //Создаем и загружаем геометрию поверхности
   GLuint vaoTriStrip;
@@ -522,13 +528,14 @@ int main(int argc, char** argv)
 
     program.StartUseShader(); GL_CHECK_ERRORS;
 
+
 		//обновляем матрицы камеры и проекции каждый кадр
     float4x4 view       = camera.GetViewMatrix();
     float4x4 projection = projectionMatrixTransposed(camera.zoom, float(WIDTH) / float(HEIGHT), 0.1f, 1000.0f);
 
 		                //модельная матрица, определяющая положение объекта в мировом пространстве
 		float4x4 model; //начинаем с единичной матрицы
-		
+		  
     program.StartUseShader();
 
     //загружаем uniform-переменные в шейдерную программу (одинаковые для всех параллельно запускаемых копий шейдера)
@@ -540,12 +547,22 @@ int main(int argc, char** argv)
 
     glBindVertexArray(vaoTriStrip);
     glDrawElements(GL_TRIANGLE_STRIP, triStripIndices, GL_UNSIGNED_INT, nullptr); 
+
+    program.StopUseShader();
+    
+    water.StartUseShader();
+
+    //загружаем uniform-переменные в шейдерную программу (одинаковые для всех параллельно запускаемых копий шейдера)
+    water.SetUniform("view",       view);       GL_CHECK_ERRORS;
+    water.SetUniform("projection", projection); GL_CHECK_ERRORS;
+    water.SetUniform("model",      model);
+
     glBindVertexArray(vaoWater);
-    glDrawElements(GL_TRIANGLE_STRIP, triStripIndices, GL_UNSIGNED_INT, nullptr);
+    glDrawElements(GL_TRIANGLE_STRIP, waterStripIndices, GL_UNSIGNED_INT, nullptr);
     GL_CHECK_ERRORS;
     glBindVertexArray(0); GL_CHECK_ERRORS;
 
-    program.StopUseShader();
+    water.StopUseShader();
 
 		glfwSwapBuffers(window); 
 	}
