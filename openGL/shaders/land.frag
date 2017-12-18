@@ -15,10 +15,9 @@ void main()
   float kd = max(dot(vNormal, lightDir), 0.0);
   if (normal == 1) {
   	float sc = dot(vNormal, up);
-  	color = vec4(0.0f, sc, 1 - sc, 1.0f);
+  	color = vec4(sc, 0.0f, 1 - sc, 1.0f);
   }
   else {
   	color = texture(ourTexture1, vTexCoords) * (1.0f, 1.0f, 1.0f, 0.6f);
   }
-
 }

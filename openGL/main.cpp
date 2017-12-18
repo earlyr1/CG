@@ -25,7 +25,7 @@ static bool g_capturedMouseJustNow = false;
 
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
-GLuint texture1;
+GLuint texture1, texture2;
 int Normal = 0;
 
 Camera camera(float3(0.0f, 30.0f, 3.0f));
@@ -384,8 +384,10 @@ static int createTriStrip(int rows, int cols, float size, GLuint &vao, int mode,
 
   GLuint vboVertices, vboIndices, vboNormals, vboTexCoords;
 
-  glGenTextures(1, &texture1);
-  glBindTexture(GL_TEXTURE_2D, texture1); // All upcoming GL_TEXTURE_2D operations now have effect on our texture object
+  if (mode == 1) glGenTextures(1, &texture1);
+  else glGenTextures(1, &texture2);
+  if (mode == 1) glBindTexture(GL_TEXTURE_2D, texture1); // All upcoming GL_TEXTURE_2D operations now have effect on our texture object
+  else glBindTexture(GL_TEXTURE_2D, texture2);
   // Set our texture parameters
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // Set texture wrapping to GL_REPEAT
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -394,10 +396,13 @@ static int createTriStrip(int rows, int cols, float size, GLuint &vao, int mode,
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   // Load, create texture and generate mipmaps
   int width, height;
-  unsigned char* image = SOIL_load_image("textures/ground.jpg", &width, &height, 0, SOIL_LOAD_RGB);
+  unsigned char* image;
+  if (mode == 1) image = SOIL_load_image("textures/ground.jpg", &width, &height, 0, SOIL_LOAD_RGB);
+  else image = SOIL_load_image("textures/water.jpg", &width, &height, 0, SOIL_LOAD_RGB);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
   glGenerateMipmap(GL_TEXTURE_2D);
   SOIL_free_image_data(image);
+  glBindTexture(GL_TEXTURE_2D, 0);
 
   glGenVertexArrays(1, &vao);
   glGenBuffers(1, &vboVertices);
@@ -519,10 +524,6 @@ int main(int argc, char** argv)
   watersh[GL_FRAGMENT_SHADER] = "shaders/water.frag";
   ShaderProgram water(watersh); GL_CHECK_ERRORS;
 
-  std::unordered_map<GLenum, std::string> skysh;
-  watersh[GL_VERTEX_SHADER]   = "shaders/skybox.vert";
-  watersh[GL_FRAGMENT_SHADER] = "shaders/skybox.frag";
-  ShaderProgram skybox(skysh); GL_CHECK_ERRORS;
 
   
   //Создаем и загружаем геометрию поверхности
@@ -586,6 +587,10 @@ int main(int argc, char** argv)
     water.SetUniform("projection", projection); GL_CHECK_ERRORS;
     water.SetUniform("model",      model);
     water.SetUniform("time", t);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture2);
+    glUniform1i(glGetUniformLocation(water.shaderProgram, "ourTexture1"), 1);
 
     glBindVertexArray(vaoWater);
     glDrawElements(GL_TRIANGLE_STRIP, waterStripIndices, GL_UNSIGNED_INT, nullptr);
