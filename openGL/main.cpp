@@ -26,6 +26,7 @@ static bool g_capturedMouseJustNow = false;
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 GLuint texture1;
+int Normal = 0;
 
 Camera camera(float3(0.0f, 30.0f, 3.0f));
 
@@ -71,7 +72,7 @@ float Landscape(std::vector<std::vector<float>>& Area)
   int H_hills = 100;
   int R_hills = 50;
   int N_hills = 20;
-  int H_mnt = 300;
+  int H_mnt = 500;
   int R_mnt = 100;
   Area[0][0] = 200;
   Area[0][s] = 150;
@@ -109,11 +110,16 @@ float Landscape(std::vector<std::vector<float>>& Area)
           Arearight(start_i + s / 2, start_j + s), Arealeft(start_i + s / 2, start_j + s));
       }  
       
-    }
+    } 
     s /= 2;
   }
   
-  for(int i = 0; i < N_hills; i++) Land_MakeHill(Area, rand() % rows, rand() % cols, rand() % H_hills, rand() % R_hills);
+  for(int i = 0; i < N_hills; i++) 
+  { srand(clock());
+    Land_MakeHill(Area, rand() % rows, rand() % cols, rand() % H_hills, rand() % R_hills);
+    
+  }
+  srand(clock());
   Land_MakeHill(Area, rand() % rows, rand() % cols, H_mnt, R_mnt);
   float m = 0;
   float mid = 0;
@@ -150,7 +156,7 @@ void OnKeyboardPressed(GLFWwindow* window, int key, int scancode, int action, in
 		}
 		break;
   case GLFW_KEY_1:
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    if (action == GLFW_RELEASE) Normal = 1 - Normal;
     break;
   case GLFW_KEY_2:
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -513,6 +519,10 @@ int main(int argc, char** argv)
   watersh[GL_FRAGMENT_SHADER] = "shaders/water.frag";
   ShaderProgram water(watersh); GL_CHECK_ERRORS;
 
+  std::unordered_map<GLenum, std::string> skysh;
+  watersh[GL_VERTEX_SHADER]   = "shaders/skybox.vert";
+  watersh[GL_FRAGMENT_SHADER] = "shaders/skybox.frag";
+  ShaderProgram skybox(skysh); GL_CHECK_ERRORS;
 
   
   //Создаем и загружаем геометрию поверхности
@@ -557,6 +567,7 @@ int main(int argc, char** argv)
     land.SetUniform("view",       view);       GL_CHECK_ERRORS;
     land.SetUniform("projection", projection); GL_CHECK_ERRORS;
     land.SetUniform("model",      model);
+    land.SetUniform("normal", Normal);
 
     //рисуем плоскость
     glActiveTexture(GL_TEXTURE0);
