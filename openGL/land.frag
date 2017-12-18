@@ -13,7 +13,6 @@ void main()
   vec3 lightDir = vec3(1.0f, 1.0f, 0.0f); 
 
   float kd = max(dot(vNormal, lightDir), 0.0);
-
-  color = texture(ourTexture1, vTexCoords);
+  color = texture(ourTexture1, vTexCoords) * (0.0, 0.0, 0.0, 0.0);
 
 }

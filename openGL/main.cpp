@@ -33,14 +33,14 @@ float Val(std::vector<std::vector<float> >&Area, int i, int j)
 {
   int n = Area.size();
   int m = Area[0].size();
-  if (i < 0 || i > n - 1 || j < 0 || j > m - 1) return 200;
+  if (i < 0 || i > n - 1 || j < 0 || j > m - 1) return 250;
   return Area[i][j];
 }
 
-float Generate(float a1, float a2, float a3, float a4)
+float Generate(float s, float a1, float a2, float a3, float a4)
 {
   float R = 0.2;
-  return (a1 + a2 + a3 + a4) / 4 + ((rand() + 0.0) / RAND_MAX) * R;
+  return (a1 + a2 + a3 + a4) / 4 + ((rand() + 0.0) / RAND_MAX) * R * s;
 }
 
 
@@ -69,24 +69,25 @@ float Landscape(std::vector<std::vector<float>>& Area)
   int i, j, start_i, start_j;
   int s = Area.size() - 1; //square size
   int H_hills = 100;
-  int R_hills = 40;
-  int N_hills = 10;
-  int D_pits = 5;
-  Area[0][0] = 0;
-  Area[0][s] = 70;
-  Area[s][0] = 40;
-  Area[s][s] = 30; 
+  int R_hills = 50;
+  int N_hills = 20;
+  int H_mnt = 300;
+  int R_mnt = 100;
+  Area[0][0] = 200;
+  Area[0][s] = 150;
+  Area[s][0] = 150;
+  Area[s][s] =100; 
 
   
   while(s > 1) 
   {
-    for(i = 0; i < rows / s; i++) 
+    for(i = 0; i < rows / s; i++)
     {
       for(j = 0; j < cols / s; j++) 
       {
         start_i = s * i;
         start_j = s * j;
-        Area[s / 2 + start_i][s / 2 + start_j] = Generate(Area[start_i][start_j], Area[s + start_i][start_j], Area[start_i][start_j + s], Area[start_i + s][s + start_j]);
+        Area[s / 2 + start_i][s / 2 + start_j] = Generate(s, Area[start_i][start_j], Area[s + start_i][start_j], Area[start_i][start_j + s], Area[start_i + s][s + start_j]);
       }
     }
     for(i = 0; i < rows / s; i++) 
@@ -95,16 +96,16 @@ float Landscape(std::vector<std::vector<float>>& Area)
       { 
         start_i = s * i;
         start_j = s * j;
-        Area[start_i + s / 2][start_j] = Generate(Areaup(start_i + s / 2, start_j), Areadown(start_i + s / 2, start_j), \
+        Area[start_i + s / 2][start_j] = Generate(s,  Areaup(start_i + s / 2, start_j), Areadown(start_i + s / 2, start_j), \
           Arearight(start_i + s / 2, start_j), Arealeft(start_i + s / 2, start_j));
 
-        Area[start_i][start_j + s / 2] = Generate(Areaup(start_i, start_j + s / 2), Areadown(start_i, start_j + s / 2), \
+        Area[start_i][start_j + s / 2] = Generate(s, Areaup(start_i, start_j + s / 2), Areadown(start_i, start_j + s / 2), \
           Arearight(start_i, start_j + s / 2), Arealeft(start_i, start_j + s / 2));
         
-        Area[start_i + s][start_j + s / 2] = Generate(Areaup(start_i + s, start_j + s / 2), Areadown(start_i + s, start_j + s / 2), \
+        Area[start_i + s][start_j + s / 2] = Generate(s, Areaup(start_i + s, start_j + s / 2), Areadown(start_i + s, start_j + s / 2), \
           Arearight(start_i + s, start_j + s / 2), Arealeft(start_i + s, start_j + s / 2));
         
-        Area[start_i + s / 2][start_j + s] = Generate(Areaup(start_i + s / 2, start_j + s), Areadown(start_i + s / 2, start_j + s), \
+        Area[start_i + s / 2][start_j + s] = Generate(s, Areaup(start_i + s / 2, start_j + s), Areadown(start_i + s / 2, start_j + s), \
           Arearight(start_i + s / 2, start_j + s), Arealeft(start_i + s / 2, start_j + s));
       }  
       
@@ -112,15 +113,11 @@ float Landscape(std::vector<std::vector<float>>& Area)
     s /= 2;
   }
   
-  for(int i = 0; i < N_hills; i++) Land_MakeHill(Area, rand() % rows, rand() % cols, rand() % H_hills,  rand() % R_hills);
-  for(auto &a: Area) for (auto &b: a) b += D_pits + 1;
-  for(int i = 0; i < N_hills; i++) Land_MakeHill(Area, rand() % rows, rand() % cols, -(rand() % D_pits),  rand() % R_hills);
-  for(auto &a: Area) for (auto &b: a) b -= D_pits + 1;
+  for(int i = 0; i < N_hills; i++) Land_MakeHill(Area, rand() % rows, rand() % cols, rand() % H_hills, rand() % R_hills);
+  Land_MakeHill(Area, rand() % rows, rand() % cols, H_mnt, R_mnt);
   float m = 0;
   float mid = 0;
   for(auto &a: Area) for (auto &b: a) {m = b > m? b : m;}
-  
-  for(auto &a: Area) for (auto &b: a) {b /= m; b += 1; b = sqrt(b); b -= 1; b *= 150;}
   for(auto &a: Area) for (auto &b: a) mid += b;
   mid /= (rows * cols); std::cout << std::endl << mid << std::endl;
   return mid;
@@ -578,7 +575,6 @@ int main(int argc, char** argv)
     water.SetUniform("projection", projection); GL_CHECK_ERRORS;
     water.SetUniform("model",      model);
     water.SetUniform("time", t);
-    water.SetUniform("amplitude", 1.0);
 
     glBindVertexArray(vaoWater);
     glDrawElements(GL_TRIANGLE_STRIP, waterStripIndices, GL_UNSIGNED_INT, nullptr);
