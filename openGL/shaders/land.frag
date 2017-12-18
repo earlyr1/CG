@@ -17,7 +17,7 @@ void main()
   	float sc = dot(vNormal, up);
   	color = vec4(sc, 0.0f, 1 - sc, 1.0f);
   }
-  else {
-  	color = texture(ourTexture1, vTexCoords) * (1.0f, 1.0f, 1.0f, 0.6f);
+  else {  
+  	color = mix(texture(ourTexture1, vTexCoords), vec4(0.3f + 0.7f * kd, 0.3f + 0.7f * kd, 0.3f + 0.7f * kd, 1.0f), 0.5);
   }
 }

@@ -69,7 +69,7 @@ float Landscape(std::vector<std::vector<float>>& Area)
   int cols = Area[0].size();
   int i, j, start_i, start_j;
   int s = Area.size() - 1; //square size
-  int H_hills = 100;
+  int H_hills = 200;
   int R_hills = 50;
   int N_hills = 20;
   int H_mnt = 500;
@@ -479,7 +479,7 @@ int main(int argc, char** argv)
 {
 	if(!glfwInit())
     return -1;
-
+ 
 	//запрашиваем контекст opengl версии 3.3
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); 
