@@ -2,4 +2,7 @@ all:
 	cmake CMakeLists.txt
 	make
 	./main
-	
+commit:
+	git add --all
+	git commit -m "Auto commit"
+	git push CG master	

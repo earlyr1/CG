@@ -14,6 +14,6 @@ void main()
 
   float kd = max(dot(vNormal, lightDir), 0.0);
 
-  color = texture(ourTexture2, vTexCoords) ;
+  color = mix(texture(ourTexture2, vTexCoords), vec4(0.5f, 0.5f, 0.5f, 1.0f), 0.5);
   
 }
