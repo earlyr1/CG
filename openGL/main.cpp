@@ -3,6 +3,7 @@
 #include "ShaderProgram.h"
 #include "Camera.h"
 #include <cmath>
+#include <SOIL/SOIL.h>
 
 //External dependencies
 #define GLFW_DLL
@@ -24,6 +25,7 @@ static bool g_capturedMouseJustNow = false;
 
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
+GLuint texture1;
 
 Camera camera(float3(0.0f, 30.0f, 3.0f));
 
@@ -49,7 +51,7 @@ void Land_MakeHill(std::vector<std::vector<float>> &data, int px, int pz, float 
     for(int w=0;w<size;w++){
 //Чем дальше точка от центра, тем меньше значение
       float r2 = ((px - i) * (px - i) + (pz - w) * (pz - w));
-      float d = exp(-r2 / 400); 
+      float d = exp(-r2 / 1000); 
       data[i][w]+=d*height;
     }
   }
@@ -66,10 +68,10 @@ float Landscape(std::vector<std::vector<float>>& Area)
   int cols = Area[0].size();
   int i, j, start_i, start_j;
   int s = Area.size() - 1; //square size
-  int H_hills = 150;
-  int R_hills = 80;
-  int N_hills = 50;
-  int D_pits = 10;
+  int H_hills = 100;
+  int R_hills = 40;
+  int N_hills = 10;
+  int D_pits = 5;
   Area[0][0] = 0;
   Area[0][s] = 70;
   Area[s][0] = 40;
@@ -379,6 +381,21 @@ static int createTriStrip(int rows, int cols, float size, GLuint &vao, int mode,
 
   GLuint vboVertices, vboIndices, vboNormals, vboTexCoords;
 
+  glGenTextures(1, &texture1);
+  glBindTexture(GL_TEXTURE_2D, texture1); // All upcoming GL_TEXTURE_2D operations now have effect on our texture object
+  // Set our texture parameters
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // Set texture wrapping to GL_REPEAT
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  // Set texture filtering
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  // Load, create texture and generate mipmaps
+  int width, height;
+  unsigned char* image = SOIL_load_image("textures/ground.jpg", &width, &height, 0, SOIL_LOAD_RGB);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+  glGenerateMipmap(GL_TEXTURE_2D);
+  SOIL_free_image_data(image);
+
   glGenVertexArrays(1, &vao);
   glGenBuffers(1, &vboVertices);
   glGenBuffers(1, &vboIndices);
@@ -407,6 +424,7 @@ static int createTriStrip(int rows, int cols, float size, GLuint &vao, int mode,
     glBufferData(GL_ARRAY_BUFFER, texcoords_vec.size() * sizeof(GL_FLOAT), &texcoords_vec[0], GL_STATIC_DRAW); GL_CHECK_ERRORS;
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GL_FLOAT), (GLvoid*)0); GL_CHECK_ERRORS;
     glEnableVertexAttribArray(2); GL_CHECK_ERRORS;
+
 
     //передаем в шейдерную программу индексы
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboIndices); GL_CHECK_ERRORS;
@@ -489,9 +507,9 @@ int main(int argc, char** argv)
 	//создание шейдерной программы из двух файлов с исходниками шейдеров
 	//используется класс-обертка ShaderProgram
 	std::unordered_map<GLenum, std::string> shaders;
-	shaders[GL_VERTEX_SHADER]   = "shaders/vertex.glsl";
-	shaders[GL_FRAGMENT_SHADER] = "shaders/fragment.glsl";
-	ShaderProgram program(shaders); GL_CHECK_ERRORS;
+	shaders[GL_VERTEX_SHADER]   = "shaders/land.vert";
+	shaders[GL_FRAGMENT_SHADER] = "shaders/land.frag";
+	ShaderProgram land(shaders); GL_CHECK_ERRORS;
 
   std::unordered_map<GLenum, std::string> watersh;
   watersh[GL_VERTEX_SHADER]   = "shaders/water.vert";
@@ -511,6 +529,7 @@ int main(int argc, char** argv)
   glViewport(0, 0, WIDTH, HEIGHT);  GL_CHECK_ERRORS;
   glEnable(GL_DEPTH_TEST);  GL_CHECK_ERRORS;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  float t = 0.;
 	//цикл обработки сообщений и отрисовки сцены каждый кадр
 	while (!glfwWindowShouldClose(window))
 	{
@@ -526,7 +545,7 @@ int main(int argc, char** argv)
 		glClearColor(0.5f, 0.65f, 1.0f, 1.0f); GL_CHECK_ERRORS;
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); GL_CHECK_ERRORS;
 
-    program.StartUseShader(); GL_CHECK_ERRORS;
+    land.StartUseShader(); GL_CHECK_ERRORS;
 
 
 		//обновляем матрицы камеры и проекции каждый кадр
@@ -536,19 +555,21 @@ int main(int argc, char** argv)
 		                //модельная матрица, определяющая положение объекта в мировом пространстве
 		float4x4 model; //начинаем с единичной матрицы
 		  
-    program.StartUseShader();
-
+    land.StartUseShader();
     //загружаем uniform-переменные в шейдерную программу (одинаковые для всех параллельно запускаемых копий шейдера)
-    program.SetUniform("view",       view);       GL_CHECK_ERRORS;
-    program.SetUniform("projection", projection); GL_CHECK_ERRORS;
-    program.SetUniform("model",      model);
+    land.SetUniform("view",       view);       GL_CHECK_ERRORS;
+    land.SetUniform("projection", projection); GL_CHECK_ERRORS;
+    land.SetUniform("model",      model);
 
     //рисуем плоскость
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture1);
+    glUniform1i(glGetUniformLocation(land.shaderProgram, "ourTexture1"), 0);
 
     glBindVertexArray(vaoTriStrip);
     glDrawElements(GL_TRIANGLE_STRIP, triStripIndices, GL_UNSIGNED_INT, nullptr); 
 
-    program.StopUseShader();
+    land.StopUseShader();
     
     water.StartUseShader();
 
@@ -556,6 +577,8 @@ int main(int argc, char** argv)
     water.SetUniform("view",       view);       GL_CHECK_ERRORS;
     water.SetUniform("projection", projection); GL_CHECK_ERRORS;
     water.SetUniform("model",      model);
+    water.SetUniform("time", t);
+    water.SetUniform("amplitude", 1.0);
 
     glBindVertexArray(vaoWater);
     glDrawElements(GL_TRIANGLE_STRIP, waterStripIndices, GL_UNSIGNED_INT, nullptr);
@@ -565,6 +588,7 @@ int main(int argc, char** argv)
     water.StopUseShader();
 
 		glfwSwapBuffers(window); 
+    t += deltaTime;
 	}
 
 	//очищаем vao перед закрытием программы

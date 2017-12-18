@@ -10,7 +10,7 @@ using namespace LiteMath;
 class ShaderProgram
 {
 public:
-
+  GLuint shaderProgram;
   ShaderProgram() : shaderProgram(-1) {};
 
   ShaderProgram(const std::unordered_map<GLenum, std::string> &inputShaders);
@@ -47,7 +47,7 @@ public:
 private:
   static GLuint LoadShaderObject(GLenum type, const std::string &filename);
 
-  GLuint shaderProgram;
+  
   std::unordered_map<GLenum, GLuint> shaderObjects;
 };
 

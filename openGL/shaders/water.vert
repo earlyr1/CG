@@ -7,10 +7,12 @@ layout(location = 2) in vec2 texCoords;
 out vec2 vTexCoords;
 out vec3 vFragPosition;
 out vec3 vNormal;
+out float t;
 
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+uniform float time;
 
 void main()
 {
@@ -19,4 +21,5 @@ void main()
   vTexCoords = texCoords;
   vFragPosition = vec3(model * vec4(vertex, 1.0f));
   vNormal = mat3(transpose(inverse(model))) * normal;
+  t = time;
 }

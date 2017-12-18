@@ -59,6 +59,8 @@ Camera.h
 /home/ruslan/code/CG/openGL/Camera.h
 cmath
 -
+SOIL/SOIL.h
+-
 GLFW/glfw3.h
 -
 random
