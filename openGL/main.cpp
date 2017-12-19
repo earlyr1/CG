@@ -524,6 +524,10 @@ int main(int argc, char** argv)
   watersh[GL_FRAGMENT_SHADER] = "shaders/water.frag";
   ShaderProgram water(watersh); GL_CHECK_ERRORS;
 
+  std::unordered_map<GLenum, std::string> skysh;
+  watersh[GL_VERTEX_SHADER]   = "shaders/skybox.vert";
+  watersh[GL_FRAGMENT_SHADER] = "shaders/skybox.frag";
+  ShaderProgram skybox(skysh); GL_CHECK_ERRORS;
 
   
   //Создаем и загружаем геометрию поверхности
