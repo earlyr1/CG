@@ -28,7 +28,7 @@ GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 GLuint texture1, texture2;
 int Normal = 0;
-
+float mid = 0;
 Camera camera(float3(0.0f, 30.0f, 3.0f));
 
 float Val(std::vector<std::vector<float> >&Area, int i, int j) 
@@ -74,7 +74,8 @@ void Sky(std::vector<std::vector<float>>& Area, float size) {
 
 void Water(std::vector<std::vector<float>>& Area, float mid) 
 {
-  for(auto &a: Area) for (auto &b: a) b = sqrt(mid);
+  for(auto &a: Area) for (auto &b: a) b = 0;
+
 }
 
 float Landscape(std::vector<std::vector<float>>& Area) 
@@ -130,17 +131,17 @@ float Landscape(std::vector<std::vector<float>>& Area)
   
   for(int i = 0; i < N_hills; i++) 
   { srand(clock());
-    Land_MakeHill(Area, rand() % rows, rand() % cols, rand() % H_hills, rand() % R_hills);
+    Land_MakeHill(Area, rand() % (rows - 2 * R_hills) + R_hills, rand() % (cols - 2 * R_hills) + R_hills, rand() % H_hills, rand() % R_hills);
     
   }
   srand(clock());
-  Land_MakeHill(Area, rand() % rows, rand() % cols, H_mnt, R_mnt);
+  Land_MakeHill(Area, rand() % (rows - 2 * R_mnt) + R_mnt, rand() % (cols - 2 * R_mnt) + R_mnt, H_mnt, R_mnt);
   float m = 0;
-  float mid = 0;
   for(auto &a: Area) for (auto &b: a) {m = b > m? b : m;}
   for(auto &a: Area) for (auto &b: a) mid += b;
   for(auto &a: Area) for (auto &b: a) b = sqrt(b);
   mid /= (rows * cols); std::cout << std::endl << mid << std::endl;
+  for(auto &a: Area) for (auto &b: a) b -= sqrt(mid) ;
   return mid;
 
 }
@@ -566,7 +567,7 @@ int main(int argc, char** argv)
   GLuint vaoWater;
   GLuint vaoSky;
   int SZ = 256;
-  float mid;
+
   int triStripIndices = createTriStrip(SZ + 1, SZ + 1, 40, vaoTriStrip, 1, mid);
   int waterStripIndices = createTriStrip(SZ + 1, SZ + 1, 40, vaoWater, 2, mid);
   int skyStripIndices = createTriStrip(SZ + 1, SZ + 1, 40, vaoSky, 3, mid);
@@ -608,6 +609,7 @@ int main(int argc, char** argv)
     land.SetUniform("projection", projection); GL_CHECK_ERRORS;
     land.SetUniform("model",      model);
     land.SetUniform("normal", Normal);
+    land.SetUniform("mid", mid);
 
     //рисуем плоскость
     glActiveTexture(GL_TEXTURE0);

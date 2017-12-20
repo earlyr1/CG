@@ -6,7 +6,7 @@ in float H;
 
 out vec4 color;
 uniform int normal;
-
+uniform float mid;
 uniform sampler2D ourTexture1;
 
 void main()
@@ -21,11 +21,11 @@ void main()
   }
   else {  
   	vec4 maincol;
-    if (H < 18.75 && updir > 0.72) {
+    if (H + sqrt(mid)< 18.75 && updir > 0.72) {
       maincol = mix(texture(ourTexture1, vTexCoords), vec4(0.992f, 0.874f, 0.466f, 1.0f), 0.5);
     }
-  	else if (H < 19 && updir > 0.72) {
-      maincol = mix(texture(ourTexture1, vTexCoords), vec4(0.992f, 0.874f, 0.466f, 1.0f), -2 * H + 38);
+  	else if (H + sqrt(mid) < 19 && updir > 0.72) {
+      maincol = mix(texture(ourTexture1, vTexCoords), vec4(0.992f, 0.874f, 0.466f, 1.0f), -2 * H - 2 * sqrt(mid) + 38);
     }
     else {
       maincol = texture(ourTexture1, vTexCoords);
