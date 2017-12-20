@@ -479,7 +479,8 @@ int main(int argc, char** argv)
 {
 	if(!glfwInit())
     return -1;
- 
+  
+
 	//запрашиваем контекст opengl версии 3.3
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); 
@@ -555,7 +556,7 @@ int main(int argc, char** argv)
 
 		//очищаем экран каждый кадр
 		glClearColor(0.5f, 0.65f, 1.0f, 1.0f); GL_CHECK_ERRORS;
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); GL_CHECK_ERRORS;
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); GL_CHECK_ERRORS; 
 
     land.StartUseShader(); GL_CHECK_ERRORS;
 
@@ -577,31 +578,38 @@ int main(int argc, char** argv)
     //рисуем плоскость
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture1);
-    glUniform1i(glGetUniformLocation(land.shaderProgram, "ourTexture1"), 0);
+    glUniform1i(glGetUniformLocation(land.GetProgram(), "ourTexture1"), 0);
 
     glBindVertexArray(vaoTriStrip);
     glDrawElements(GL_TRIANGLE_STRIP, triStripIndices, GL_UNSIGNED_INT, nullptr); 
 
     land.StopUseShader();
     
+
+    //glEnable(GL_ALPHA_TEST);GL_CHECK_ERRORS; 
+    glEnable(GL_BLEND);GL_CHECK_ERRORS; 
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);GL_CHECK_ERRORS; 
     water.StartUseShader();
 
+
     //загружаем uniform-переменные в шейдерную программу (одинаковые для всех параллельно запускаемых копий шейдера)
-    water.SetUniform("view",       view);       GL_CHECK_ERRORS;
+    water.SetUniform("view",       view);       
     water.SetUniform("projection", projection); GL_CHECK_ERRORS;
     water.SetUniform("model",      model);
     water.SetUniform("time", t);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture2);
-    glUniform1i(glGetUniformLocation(water.shaderProgram, "ourTexture1"), 1);
+    glUniform1i(glGetUniformLocation(water.GetProgram(), "ourTexture1"), 1);
 
     glBindVertexArray(vaoWater);
     glDrawElements(GL_TRIANGLE_STRIP, waterStripIndices, GL_UNSIGNED_INT, nullptr);
     GL_CHECK_ERRORS;
     glBindVertexArray(0); GL_CHECK_ERRORS;
-
+    
     water.StopUseShader();
+    glDisable(GL_BLEND);
+    //glDisable(GL_ALPHA_TEST);
 
 		glfwSwapBuffers(window); 
     t += deltaTime;
