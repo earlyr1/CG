@@ -662,8 +662,7 @@ int main(int argc, char** argv)
 
 		glfwSwapBuffers(window); 
     t += deltaTime;
-    //theta += v * deltaTime;
-    //theta = theta > 2 * 3.1415926? 0: theta;
+    theta += v * deltaTime;
 	}
 
 	//очищаем vao перед закрытием программы
