@@ -35,7 +35,7 @@ float Val(std::vector<std::vector<float> >&Area, int i, int j)
 {
   int n = Area.size();
   int m = Area[0].size();
-  if (i < 0 || i > n - 1 || j < 0 || j > m - 1) return 250;
+  if (i < 0 || i > n - 1 || j < 0 || j > m - 1) return 100;
   return Area[i][j];
 }
 
@@ -74,7 +74,7 @@ void Sky(std::vector<std::vector<float>>& Area, float size) {
 
 void Water(std::vector<std::vector<float>>& Area, float mid) 
 {
-  for(auto &a: Area) for (auto &b: a) b = mid;
+  for(auto &a: Area) for (auto &b: a) b = sqrt(mid);
 }
 
 float Landscape(std::vector<std::vector<float>>& Area) 
@@ -139,6 +139,7 @@ float Landscape(std::vector<std::vector<float>>& Area)
   float mid = 0;
   for(auto &a: Area) for (auto &b: a) {m = b > m? b : m;}
   for(auto &a: Area) for (auto &b: a) mid += b;
+  for(auto &a: Area) for (auto &b: a) b = sqrt(b);
   mid /= (rows * cols); std::cout << std::endl << mid << std::endl;
   return mid;
 
@@ -249,7 +250,7 @@ void doCameraMovement(Camera &camera, GLfloat deltaTime)
 static int createTriStrip(int rows, int cols, float size, GLuint &vao, int mode, float & mid)
 {
 
-  if (mode == 3) size = 2 * SKY_R;
+  if (mode != 1) size = 2 * SKY_R; 
   int numIndices = 2 * cols*(rows - 1) + rows - 1;
 
   std::vector<GLfloat> vertices_vec; //вектор атрибута координат вершин
@@ -281,7 +282,7 @@ static int createTriStrip(int rows, int cols, float size, GLuint &vao, int mode,
       //вычисляем координаты каждой из вершин 
       float xx = -size / 2 + x*size / cols;
       float zz = -size / 2 + z*size / rows;
-      float yy = (mode != 3)? sqrt(Area[z][x]): Area[z][x];
+      float yy = Area[z][x];
 
       vertices_vec.push_back(xx);
       vertices_vec.push_back(yy);
@@ -575,7 +576,7 @@ int main(int argc, char** argv)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   float t = 0.;
   float v = 0.5;
-  float theta = 1.5;
+  float theta = 0.16;
 	//цикл обработки сообщений и отрисовки сцены каждый кадр
 	while (!glfwWindowShouldClose(window))
 	{
@@ -661,8 +662,9 @@ int main(int argc, char** argv)
     //glDisable(GL_ALPHA_TEST);
 
 		glfwSwapBuffers(window); 
-    t += deltaTime;
-    theta += v * deltaTime;
+    //theta += v * deltaTime;
+    //theta = theta > 2 * 3.1415? theta - 2 * 3.1415: theta;
+    //std::cout << theta << std::endl;
 	}
 
 	//очищаем vao перед закрытием программы

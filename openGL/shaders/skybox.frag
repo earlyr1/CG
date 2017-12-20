@@ -93,15 +93,14 @@ uniform sampler2D ourTexture2;
 void main()
 {
   
-  float theta1 = theta;
   vec3 lightDir = vec3(cos(theta), sin(theta), 0.0f); 
   float kd = max(dot(vNormal, lightDir), 0.0);
   vec3 col = vec3(0.459f, 0.733f, 0.99f);
   vec3 Sun = lightDir * r;
   
   float thetas = theta;
-  theta1 = acos(vFragPosition[1] / r);
+  float theta1 = acos(vFragPosition[1] / r);
   float gamma = acos(dot(vFragPosition, Sun) / (r * r));
-  color = convertColor(perezSky(0.0, cos(theta1), cos(gamma), cos(thetas)));
+  color = vec4(convertColor(perezSky(5, cos(theta1), cos(gamma), cos(thetas))), 1.0f);
   
 }
