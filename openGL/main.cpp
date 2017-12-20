@@ -23,6 +23,7 @@ static bool firstMouse = true;
 static bool g_captureMouse         = true;  // Мышка захвачена нашим приложением или нет?
 static bool g_capturedMouseJustNow = false;
 
+float SKY_R = 100;
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 GLuint texture1, texture2;
@@ -54,6 +55,19 @@ void Land_MakeHill(std::vector<std::vector<float>> &data, int px, int pz, float 
       float r2 = ((px - i) * (px - i) + (pz - w) * (pz - w));
       float d = exp(-r2 / 1000); 
       data[i][w]+=d*height;
+    }
+  }
+}
+
+void Sky(std::vector<std::vector<float>>& Area, float size) {
+  int n = Area.size();
+  int r = n / 2;
+  for(int x = 0; x < n; x++) 
+  {
+    for(int y = 0; y < n; y++) 
+    {
+      float u = size / 2 * (1 - ((x - r) * (x - r) + (y - r) * (y - r) + 0.) / (r * r));
+      Area[x][y] = u > 0? u : 0;
     }
   }
 }
@@ -234,6 +248,8 @@ void doCameraMovement(Camera &camera, GLfloat deltaTime)
 */
 static int createTriStrip(int rows, int cols, float size, GLuint &vao, int mode, float & mid)
 {
+
+  if (mode == 3) size = 2 * SKY_R;
   int numIndices = 2 * cols*(rows - 1) + rows - 1;
 
   std::vector<GLfloat> vertices_vec; //вектор атрибута координат вершин
@@ -255,7 +271,9 @@ static int createTriStrip(int rows, int cols, float size, GLuint &vao, int mode,
   std::vector<std::vector<float>> Area; Area.resize(rows);
   for(auto &a: Area) a = std::vector<float>(cols, 0.0);
   if (mode == 1) mid = Landscape(Area);
-  else Water(Area, mid);
+  else if (mode == 2) Water(Area, mid);
+  else if (mode == 3) Sky(Area, size);
+
   for (int z = 0; z < rows; ++z)
   {
     for (int x = 0; x < cols; ++x)
@@ -263,7 +281,7 @@ static int createTriStrip(int rows, int cols, float size, GLuint &vao, int mode,
       //вычисляем координаты каждой из вершин 
       float xx = -size / 2 + x*size / cols;
       float zz = -size / 2 + z*size / rows;
-      float yy = sqrt(Area[z][x]);
+      float yy = (mode != 3)? sqrt(Area[z][x]): Area[z][x];
 
       vertices_vec.push_back(xx);
       vertices_vec.push_back(yy);
@@ -475,6 +493,28 @@ int initGL()
 	return 0;
 }
 
+void InitLand(ShaderProgram& land) {
+  std::unordered_map<GLenum, std::string> shaders;
+  shaders[GL_VERTEX_SHADER]   = "shaders/land.vert";
+  shaders[GL_FRAGMENT_SHADER] = "shaders/land.frag";
+  land = ShaderProgram(shaders);
+}
+
+void InitWater(ShaderProgram& water) {
+  std::unordered_map<GLenum, std::string> shaders;
+  shaders[GL_VERTEX_SHADER]   = "shaders/water.vert";
+  shaders[GL_FRAGMENT_SHADER] = "shaders/water.frag";
+  water = ShaderProgram(shaders);
+}
+
+void InitSkybox(ShaderProgram& skybox) {
+  std::unordered_map<GLenum, std::string> shaders;
+  shaders[GL_VERTEX_SHADER]   = "shaders/skybox.vert";
+  shaders[GL_FRAGMENT_SHADER] = "shaders/skybox.frag";
+  skybox = ShaderProgram(shaders);
+}
+
+
 int main(int argc, char** argv)
 {
 	if(!glfwInit())
@@ -515,34 +555,27 @@ int main(int argc, char** argv)
 
 	//создание шейдерной программы из двух файлов с исходниками шейдеров
 	//используется класс-обертка ShaderProgram
-	std::unordered_map<GLenum, std::string> shaders;
-	shaders[GL_VERTEX_SHADER]   = "shaders/land.vert";
-	shaders[GL_FRAGMENT_SHADER] = "shaders/land.frag";
-	ShaderProgram land(shaders); GL_CHECK_ERRORS;
-
-  std::unordered_map<GLenum, std::string> watersh;
-  watersh[GL_VERTEX_SHADER]   = "shaders/water.vert";
-  watersh[GL_FRAGMENT_SHADER] = "shaders/water.frag";
-  ShaderProgram water(watersh); GL_CHECK_ERRORS;
-
-  std::unordered_map<GLenum, std::string> skysh;
-  watersh[GL_VERTEX_SHADER]   = "shaders/skybox.vert";
-  watersh[GL_FRAGMENT_SHADER] = "shaders/skybox.frag";
-  ShaderProgram skybox(skysh); GL_CHECK_ERRORS;
-
+	ShaderProgram land, water, skybox;
+  InitLand(land); GL_CHECK_ERRORS;
+  InitWater(water); GL_CHECK_ERRORS;
+  InitSkybox(skybox); GL_CHECK_ERRORS;
   
   //Создаем и загружаем геометрию поверхности
   GLuint vaoTriStrip;
   GLuint vaoWater;
+  GLuint vaoSky;
   int SZ = 256;
   float mid;
   int triStripIndices = createTriStrip(SZ + 1, SZ + 1, 40, vaoTriStrip, 1, mid);
   int waterStripIndices = createTriStrip(SZ + 1, SZ + 1, 40, vaoWater, 2, mid);
+  int skyStripIndices = createTriStrip(SZ + 1, SZ + 1, 40, vaoSky, 3, mid);
 
   glViewport(0, 0, WIDTH, HEIGHT);  GL_CHECK_ERRORS;
   glEnable(GL_DEPTH_TEST);  GL_CHECK_ERRORS;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   float t = 0.;
+  float v = 1;
+  float theta = 0.;
 	//цикл обработки сообщений и отрисовки сцены каждый кадр
 	while (!glfwWindowShouldClose(window))
 	{
@@ -586,7 +619,7 @@ int main(int argc, char** argv)
     land.StopUseShader();
     
 
-    //glEnable(GL_ALPHA_TEST);GL_CHECK_ERRORS; 
+    //glEnable(GL_ALPHA_TEST);GL_CHECK_ERRORS; Почему-то с альфа-тестом не работает
     glEnable(GL_BLEND);GL_CHECK_ERRORS; 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);GL_CHECK_ERRORS; 
     water.StartUseShader();
@@ -609,10 +642,28 @@ int main(int argc, char** argv)
     
     water.StopUseShader();
     glDisable(GL_BLEND);
+
+
+    skybox.StartUseShader();
+    //загружаем uniform-переменные в шейдерную программу (одинаковые для всех параллельно запускаемых копий шейдера)
+    skybox.SetUniform("view",       view);       GL_CHECK_ERRORS;
+    skybox.SetUniform("projection", projection); GL_CHECK_ERRORS;
+    skybox.SetUniform("model",      model);
+    skybox.SetUniform("theta1", theta);
+    skybox.SetUniform("r", SKY_R);
+
+    //рисуем плоскость
+
+    glBindVertexArray(vaoSky);
+    glDrawElements(GL_TRIANGLE_STRIP, skyStripIndices, GL_UNSIGNED_INT, nullptr); 
+
+    skybox.StopUseShader();
     //glDisable(GL_ALPHA_TEST);
 
 		glfwSwapBuffers(window); 
     t += deltaTime;
+    theta += v * deltaTime;
+    theta = theta > 2 * 3.1415926? theta - 2 * 3.1415926: theta;
 	}
 
 	//очищаем vao перед закрытием программы

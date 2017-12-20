@@ -21,10 +21,10 @@ void main()
   }
   else {  
   	vec4 maincol;
-    if (H < 18.75 && updir > 0.75) {
+    if (H < 18.75 && updir > 0.72) {
       maincol = mix(texture(ourTexture1, vTexCoords), vec4(0.992f, 0.874f, 0.466f, 1.0f), 0.5);
     }
-  	else if (H < 19 && updir > 0.75) {
+  	else if (H < 19 && updir > 0.72) {
       maincol = mix(texture(ourTexture1, vTexCoords), vec4(0.992f, 0.874f, 0.466f, 1.0f), -2 * H + 38);
     }
     else {
