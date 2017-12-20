@@ -21,13 +21,16 @@ void main()
   }
   else {  
   	vec4 maincol;
-  	if (H < 19 && updir > 0.75) {
+    if (H < 18.75 && updir > 0.75) {
       maincol = mix(texture(ourTexture1, vTexCoords), vec4(0.992f, 0.874f, 0.466f, 1.0f), 0.5);
+    }
+  	else if (H < 19 && updir > 0.75) {
+      maincol = mix(texture(ourTexture1, vTexCoords), vec4(0.992f, 0.874f, 0.466f, 1.0f), -2 * H + 38);
     }
     else {
       maincol = texture(ourTexture1, vTexCoords);
     }
-    color = mix(maincol, vec4(0.3f + 0.7f * kd, 0.3f + 0.7f * kd, 0.3f + 0.7f * kd, 1.0f), 0.5);
+    color = mix(maincol, vec4(0.3f + 0.7f * kd, 0.3f + 0.7f * kd, 0.3f + 0.7f * kd, 1.0f), 0.3);
   }
 }
 
