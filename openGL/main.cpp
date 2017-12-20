@@ -574,8 +574,8 @@ int main(int argc, char** argv)
   glEnable(GL_DEPTH_TEST);  GL_CHECK_ERRORS;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   float t = 0.;
-  float v = 1;
-  float theta = 0.;
+  float v = 0.5;
+  float theta = 1.5;
 	//цикл обработки сообщений и отрисовки сцены каждый кадр
 	while (!glfwWindowShouldClose(window))
 	{
@@ -662,8 +662,8 @@ int main(int argc, char** argv)
 
 		glfwSwapBuffers(window); 
     t += deltaTime;
-    theta += v * deltaTime;
-    theta = theta > 2 * 3.1415926? theta - 2 * 3.1415926: theta;
+    //theta += v * deltaTime;
+    //theta = theta > 2 * 3.1415926? 0: theta;
 	}
 
 	//очищаем vao перед закрытием программы
