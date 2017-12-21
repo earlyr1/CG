@@ -24,6 +24,8 @@ static bool firstMouse = true;
 static bool g_captureMouse         = true;  // Мышка захвачена нашим приложением или нет?
 static bool g_capturedMouseJustNow = false;
 
+int normal_vectors = 0;
+int fog = 1;
 float SKY_R = 100;
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
@@ -150,6 +152,8 @@ void Water(std::vector<std::vector<float>>& Area, float mid)
 
 }
 
+
+
 float Landscape(std::vector<std::vector<float>>& Area) 
 {
   int rows = Area.size();
@@ -245,6 +249,12 @@ void OnKeyboardPressed(GLFWwindow* window, int key, int scancode, int action, in
 		break;
   case GLFW_KEY_1:
     if (action == GLFW_RELEASE) Normal = 1 - Normal;
+    break;
+  case GLFW_KEY_N:
+    if (action == GLFW_RELEASE) normal_vectors= 1 - normal_vectors;
+    break;
+  case GLFW_KEY_F:
+    if (action == GLFW_RELEASE) fog= 1 - fog;
     break;
   case GLFW_KEY_2:
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -597,7 +607,21 @@ void InitBoat(ShaderProgram &boat) {
   shaders[GL_FRAGMENT_SHADER] = "shaders/skybox.frag";
   boat = ShaderProgram(shaders);
 }
-
+/*
+void InitRock(ShaderProgram &rock) {
+  std::unordered_map<GLenum, std::string> shaders;
+  shaders[GL_VERTEX_SHADER]   = "shaders/rock.vert";
+  shaders[GL_FRAGMENT_SHADER] = "shaders/rock.frag";
+  rock = ShaderProgram(shaders);
+}
+*/
+void InitNormal(ShaderProgram& normal) {
+  std::unordered_map<GLenum, std::string> shaders;
+  shaders[GL_VERTEX_SHADER]   = "shaders/normal.vert";
+  shaders[GL_FRAGMENT_SHADER] = "shaders/normal.frag";
+  shaders[GL_GEOMETRY_SHADER] = "shaders/normal.geom";
+  normal = ShaderProgram(shaders);
+}
 
 int main(int argc, char** argv)
 {
@@ -639,16 +663,18 @@ int main(int argc, char** argv)
 
 	//создание шейдерной программы из двух файлов с исходниками шейдеров
 	//используется класс-обертка ShaderProgram
-	ShaderProgram land, water, skybox, boat;
+	ShaderProgram land, water, skybox, boat, rock, normal;
   InitLand(land); GL_CHECK_ERRORS;
   InitWater(water); GL_CHECK_ERRORS;
   InitSkybox(skybox); GL_CHECK_ERRORS;
-  InitBoat(boat); GL_CHECK_ERRORS;
+  //InitRock(rock); GL_CHECK_ERRORS;
+  InitNormal(normal); GL_CHECK_ERRORS;
   
   //Создаем и загружаем геометрию поверхности
   GLuint vaoTriStrip;
   GLuint vaoWater;
   GLuint vaoSky;
+  GLuint vaoRock;
   int SZ = 256;
 
   int triStripIndices = createTriStrip(SZ + 1, SZ + 1, 40, vaoTriStrip, 1, mid);
@@ -666,11 +692,11 @@ int main(int argc, char** argv)
   GLuint fogMode[]= { GL_EXP, GL_EXP2, GL_LINEAR };  GL_CHECK_ERRORS;// Хранит три типа тумана
   GLuint fogfilter= 0;                    // Тип используемого тумана
   GLfloat fogColor[4]= {0.5f, 0.5f, 0.5f, 1.0f}; // Цвет тумана
-/*
+  /*
   std::vector< glm::vec3 > vertices;
   std::vector< glm::vec2 > uvs;
   std::vector< glm::vec3 > normals; // Won't be used at the moment.
-  bool res = loadOBJ("models/boat/steamboat.obj", vertices, uvs, normals);
+  bool boatStripIndices = loadOBJ("models/boat/steamboat.obj", vertices, uvs, normals);
 */
 	//цикл обработки сообщений и отрисовки сцены каждый кадр
 	while (!glfwWindowShouldClose(window))
@@ -704,6 +730,7 @@ int main(int argc, char** argv)
     land.SetUniform("model",      model);
     land.SetUniform("normal", Normal);
     land.SetUniform("mid", mid);
+    land.SetUniform("fog", fog);
 
     //рисуем плоскость
     glActiveTexture(GL_TEXTURE0);
@@ -714,8 +741,16 @@ int main(int argc, char** argv)
     glDrawElements(GL_TRIANGLE_STRIP, triStripIndices, GL_UNSIGNED_INT, nullptr); 
 
     land.StopUseShader();
-    
 
+    if (normal_vectors) { 
+      normal.StartUseShader();
+      normal.SetUniform("view",       view);       GL_CHECK_ERRORS;
+      normal.SetUniform("projection", projection); GL_CHECK_ERRORS;
+      normal.SetUniform("model",      model);
+      glDrawElements(GL_TRIANGLE_STRIP, triStripIndices, GL_UNSIGNED_INT, nullptr); 
+      glBindVertexArray(vaoTriStrip);
+      normal.StopUseShader();
+    }
     //glEnable(GL_ALPHA_TEST);GL_CHECK_ERRORS; Почему-то с альфа-тестом не работает
     glEnable(GL_BLEND);GL_CHECK_ERRORS; 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);GL_CHECK_ERRORS; 
@@ -727,6 +762,7 @@ int main(int argc, char** argv)
     water.SetUniform("projection", projection); GL_CHECK_ERRORS;
     water.SetUniform("model",      model);
     water.SetUniform("time", t);
+    water.SetUniform("fog", fog);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture2);
@@ -748,6 +784,7 @@ int main(int argc, char** argv)
     skybox.SetUniform("model",      model);
     skybox.SetUniform("theta1", theta);
     skybox.SetUniform("r", SKY_R);
+    skybox.SetUniform("fog", fog);
 
     //рисуем плоскость
 
@@ -755,21 +792,17 @@ int main(int argc, char** argv)
     glDrawElements(GL_TRIANGLE_STRIP, skyStripIndices, GL_UNSIGNED_INT, nullptr); 
 
     skybox.StopUseShader();
-
-    
-    //glDisable(GL_ALPHA_TEST);
-
     /*
-    glEnable(GL_FOG);   ; GL_CHECK_ERRORS;                    // Включает туман (GL_FOG)
-    glFogi(GL_FOG_MODE, fogMode[fogfilter]);; GL_CHECK_ERRORS;// Выбираем тип тумана
-    glFogfv(GL_FOG_COLOR, fogColor);   ; GL_CHECK_ERRORS;     // Устанавливаем цвет тумана
-    glFogf(GL_FOG_DENSITY, 0.35f);  ; GL_CHECK_ERRORS;        // Насколько густым будет туман
-    glHint(GL_FOG_HINT, GL_DONT_CARE); ; GL_CHECK_ERRORS;     // Вспомогательная установка тумана
-    glFogf(GL_FOG_START, 1.0f);    ; GL_CHECK_ERRORS;         // Глубина, с которой начинается туман
-    glFogf(GL_FOG_END, 5.0f);   ; GL_CHECK_ERRORS;            // Глубина, где туман заканчивается.
-    glDisable(GL_FOG);
+    boat.StartUseShader();
+    boat.SetUniform("view",       view);       GL_CHECK_ERRORS;
+    boat.SetUniform("projection", projection); GL_CHECK_ERRORS;
+    boat.SetUniform("model",      model);
+    //glBindVertexArray(vaoBoat);
+    glDrawElements(GL_TRIANGLE_STRIP, boatStripIndices, GL_UNSIGNED_INT, nullptr); 
     */
-
+    //glDisable(GL_ALPHA_TEST);
+   
+    t +=  deltaTime;
 		glfwSwapBuffers(window); 
     theta += v * deltaTime;
     if (theta < 0) 
@@ -782,7 +815,7 @@ int main(int argc, char** argv)
       v = -v; 
       theta = 3.1415926 / 2 - 0.001;
     }
-    std::cout << theta << std::endl;
+    //std::cout << theta << std::endl;
 	}
 
 	//очищаем vao перед закрытием программы

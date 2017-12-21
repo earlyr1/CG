@@ -5,27 +5,44 @@ in vec3 vNormal;
 in float theta;
  
 uniform float r;
+uniform int fog;
+
+
+vec4 Fogcolor = vec4(1.0,1.0,1.0,1.0);
+float density = 0.04;
+float fogFactor;
+float z;
+
+float zNear = 0.1; 
+float zFar  = 100.0; 
+  
+float LinearizeDepth(float depth) 
+{
+    float z = depth * 2.0 - 1.0; 
+    return (2.0 * zNear * zFar) / (zFar + zNear - z * (zFar - zNear));  
+}
+
 
 
 vec3 perezZenith ( float t, float thetaSun )
 {
-	const float	pi = 3.1415926;
-	const vec4	cx1 = vec4 ( 0,       0.00209, -0.00375, 0.00165  );
-	const vec4	cx2 = vec4 ( 0.00394, -0.03202, 0.06377, -0.02903 );
-	const vec4	cx3 = vec4 ( 0.25886, 0.06052, -0.21196, 0.11693  );
-	const vec4	cy1 = vec4 ( 0.0,     0.00317, -0.00610, 0.00275  );
-	const vec4	cy2 = vec4 ( 0.00516, -0.04153, 0.08970, -0.04214 );
-	const vec4	cy3 = vec4 ( 0.26688, 0.06670, -0.26756, 0.15346  );
+  const float pi = 3.1415926;
+  const vec4  cx1 = vec4 ( 0,       0.00209, -0.00375, 0.00165  );
+  const vec4  cx2 = vec4 ( 0.00394, -0.03202, 0.06377, -0.02903 );
+  const vec4  cx3 = vec4 ( 0.25886, 0.06052, -0.21196, 0.11693  );
+  const vec4  cy1 = vec4 ( 0.0,     0.00317, -0.00610, 0.00275  );
+  const vec4  cy2 = vec4 ( 0.00516, -0.04153, 0.08970, -0.04214 );
+  const vec4  cy3 = vec4 ( 0.26688, 0.06670, -0.26756, 0.15346  );
 
-	float	t2    = t*t;
-	float	chi   = (4.0 / 9.0 - t / 120.0 ) * (pi - 2.0 * thetaSun );
-	vec4	theta = vec4 ( 1, thetaSun, thetaSun*thetaSun, thetaSun*thetaSun*thetaSun );
+  float t2    = t*t;
+  float chi   = (4.0 / 9.0 - t / 120.0 ) * (pi - 2.0 * thetaSun );
+  vec4  theta = vec4 ( 1, thetaSun, thetaSun*thetaSun, thetaSun*thetaSun*thetaSun );
 
-	float	Y = (4.0453 * t - 4.9710) * tan ( chi ) - 0.2155 * t + 2.4192;
-	float	x = t2 * dot ( cx1, theta ) + t * dot ( cx2, theta ) + dot ( cx3, theta );
-	float	y = t2 * dot ( cy1, theta ) + t * dot ( cy2, theta ) + dot ( cy3, theta );
+  float Y = (4.0453 * t - 4.9710) * tan ( chi ) - 0.2155 * t + 2.4192;
+  float x = t2 * dot ( cx1, theta ) + t * dot ( cx2, theta ) + dot ( cx3, theta );
+  float y = t2 * dot ( cy1, theta ) + t * dot ( cy2, theta ) + dot ( cy3, theta );
 
-	return vec3 ( Y, x, y );
+  return vec3 ( Y, x, y );
 }
 
 //
@@ -63,12 +80,12 @@ vec3  perezSky ( float t, float cosTheta, float cosGamma, float cosThetaSun )
     vec3  zenith   = perezZenith ( t, thetaSun );
     vec3  clrYxy   = zenith * perezFunc ( t, cosTheta, cosGamma ) / perezFunc ( t, 1.0, cosThetaSun );
 
-    clrYxy [0] *= smoothstep ( 0.0, 0.1, cosThetaSun );			// make sure when thetaSun > PI/2 we have black color
-	
+    clrYxy [0] *= smoothstep ( 0.0, 0.1, cosThetaSun );     // make sure when thetaSun > PI/2 we have black color
+  
     return clrYxy;
 }
 
-vec3	convertColor (vec3 clrYxy)
+vec3  convertColor (vec3 clrYxy)
 {
                                             // now rescale Y component
     clrYxy [0] = 1.0 - exp ( -clrYxy [0] / 25.0 );
@@ -102,5 +119,7 @@ void main()
   float theta1 = acos(vFragPosition[1] / r);
   float gamma = acos(dot(vFragPosition, Sun) / (r * r));
   color = vec4(convertColor(perezSky(5, cos(theta1), cos(gamma), cos(thetas))), 1.0f);
-  
+  if (fog == 1) {
+    color = mix(color, Fogcolor, fogFactor);
+  }
 }
