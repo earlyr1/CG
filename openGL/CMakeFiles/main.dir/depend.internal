@@ -87,6 +87,10 @@ CMakeFiles/main.dir/main.cpp.o
  /home/ruslan/code/CG/openGL/glm/fwd.hpp
  /home/ruslan/code/CG/openGL/glm/geometric.hpp
  /home/ruslan/code/CG/openGL/glm/glm.hpp
+ /home/ruslan/code/CG/openGL/glm/gtc/constants.hpp
+ /home/ruslan/code/CG/openGL/glm/gtc/constants.inl
+ /home/ruslan/code/CG/openGL/glm/gtc/matrix_transform.hpp
+ /home/ruslan/code/CG/openGL/glm/gtc/matrix_transform.inl
  /home/ruslan/code/CG/openGL/glm/integer.hpp
  /home/ruslan/code/CG/openGL/glm/mat2x2.hpp
  /home/ruslan/code/CG/openGL/glm/mat2x3.hpp

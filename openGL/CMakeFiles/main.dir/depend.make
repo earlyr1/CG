@@ -86,6 +86,10 @@ CMakeFiles/main.dir/main.cpp.o: glm/exponential.hpp
 CMakeFiles/main.dir/main.cpp.o: glm/fwd.hpp
 CMakeFiles/main.dir/main.cpp.o: glm/geometric.hpp
 CMakeFiles/main.dir/main.cpp.o: glm/glm.hpp
+CMakeFiles/main.dir/main.cpp.o: glm/gtc/constants.hpp
+CMakeFiles/main.dir/main.cpp.o: glm/gtc/constants.inl
+CMakeFiles/main.dir/main.cpp.o: glm/gtc/matrix_transform.hpp
+CMakeFiles/main.dir/main.cpp.o: glm/gtc/matrix_transform.inl
 CMakeFiles/main.dir/main.cpp.o: glm/integer.hpp
 CMakeFiles/main.dir/main.cpp.o: glm/mat2x2.hpp
 CMakeFiles/main.dir/main.cpp.o: glm/mat2x3.hpp

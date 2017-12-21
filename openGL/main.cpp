@@ -5,6 +5,8 @@
 #include <cmath>
 #include <SOIL/SOIL.h>
 #include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+
 #include "Obj.h"
 //External dependencies
 #define GLFW_DLL
@@ -24,6 +26,8 @@ static bool firstMouse = true;
 static bool g_captureMouse         = true;  // Мышка захвачена нашим приложением или нет?
 static bool g_capturedMouseJustNow = false;
 
+
+float LAND_SIZE = 256.0/5;
 int normal_vectors = 0;
 int inf_land =1;
 int fog = 1;
@@ -253,6 +257,9 @@ void OnKeyboardPressed(GLFWwindow* window, int key, int scancode, int action, in
   case GLFW_KEY_1:
     if (action == GLFW_RELEASE) Normal = 1 - Normal;
     break;
+  case GLFW_KEY_I:
+    if (action == GLFW_RELEASE) inf_land = 1 - inf_land;
+    break;
   case GLFW_KEY_N:
     if (action == GLFW_RELEASE) normal_vectors= 1 - normal_vectors;
     break;
@@ -323,6 +330,19 @@ void doCameraMovement(Camera &camera, GLfloat deltaTime)
     camera.ProcessKeyboard(BACKWARD, deltaTime);
   if (keys[GLFW_KEY_D])
     camera.ProcessKeyboard(RIGHT, deltaTime);
+  /*
+  if (inf_land) {
+    while (camera.pos.x > LAND_SIZE / 2) camera.pos.x -= LAND_SIZE;
+  }
+  if (inf_land) {
+    while (camera.pos.x < -LAND_SIZE / 2) camera.pos.x += LAND_SIZE;
+  }
+  if (inf_land) {
+    while (camera.pos.z > LAND_SIZE / 2) camera.pos.z -= LAND_SIZE;
+  }
+  if (inf_land) {
+    while (camera.pos.z < -LAND_SIZE / 2) camera.pos.z += LAND_SIZE;
+  }*/
 }
 
 
@@ -687,7 +707,7 @@ int main(int argc, char** argv)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   float t = 0.;
   float v = 0.5;
-  float theta = 0;
+  float theta = 3.1415926 / 2;
 
   GLuint filter;                          // Используемый фильтр для текстур
   GLuint fogMode[]= { GL_EXP, GL_EXP2, GL_LINEAR };  GL_CHECK_ERRORS;// Хранит три типа тумана
@@ -733,15 +753,29 @@ int main(int argc, char** argv)
     land.SetUniform("normal", Normal);
     land.SetUniform("mid", mid);
     land.SetUniform("fog", fog);
-    if (inf_land) {;}
+
     //рисуем плоскость
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture1);
     glUniform1i(glGetUniformLocation(land.GetProgram(), "ourTexture1"), 0);
-
-    
     glBindVertexArray(vaoTriStrip);
-    glDrawElements(GL_TRIANGLE_STRIP, triStripIndices, GL_UNSIGNED_INT, nullptr); 
+    if (inf_land) {
+      for(int x = -1; x < 2; x++) {
+        for(int y = -1; y < 2; y++) {
+          glm::mat4 transform(1);
+          transform = glm::translate(transform, glm::vec3((LAND_SIZE * x, LAND_SIZE * y,0)));
+          for(int i = 0; i < 4; i++) for(int j = 0; j < 4; j++) model.M(i, j) = transform[j][i];
+          land.SetUniform("model", model);
+          glDrawElements(GL_TRIANGLE_STRIP, triStripIndices, GL_UNSIGNED_INT, nullptr); 
+        }
+      }
+    }
+    else {
+      land.SetUniform("model",      model);
+      glDrawElements(GL_TRIANGLE_STRIP, triStripIndices, GL_UNSIGNED_INT, nullptr); 
+    }
+    
+    model = float4x4();
     
 
     land.StopUseShader();
@@ -809,7 +843,7 @@ int main(int argc, char** argv)
    
     t +=  deltaTime;
 		glfwSwapBuffers(window); 
-    theta += v * deltaTime;
+    if (!inf_land)theta += v * deltaTime;
     if (theta < 0) 
     {
       v = -v; 
@@ -820,7 +854,7 @@ int main(int argc, char** argv)
       v = -v; 
       theta = 3.1415926 / 2 - 0.001;
     }
-    //std::cout << theta << std::endl;
+  std::cout << theta << std::endl;
 	}
 
 	//очищаем vao перед закрытием программы
