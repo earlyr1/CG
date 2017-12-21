@@ -109,6 +109,8 @@ uniform sampler2D ourTexture2;
 
 void main()
 {
+  z = gl_FragCoord.z / gl_FragCoord.w;
+  fogFactor = exp(-pow(1.0 / (density * z), 2.0));
   
   vec3 lightDir = vec3(cos(theta), sin(theta), 0.0f); 
   float kd = max(dot(vNormal, lightDir), 0.0);

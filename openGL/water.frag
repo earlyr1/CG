@@ -34,11 +34,11 @@ void main()
   vec3 col = vec3(0.1, 0.1, 0.1);
 
   float kd = max(dot(vNormal, lightDir), 0.0);
+
+  color = mix(texture(ourTexture2, vTexCoords), vec4(7 * col, 0.5f), transparency);
   if (fog == 1) 
   {
   	color = mix(color, Fogcolor, fogFactor);
   }
-  color = mix(texture(ourTexture2, vTexCoords), vec4(7 * col, 0.5f), transparency);
-  
   
 }

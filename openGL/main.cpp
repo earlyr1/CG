@@ -25,6 +25,7 @@ static bool g_captureMouse         = true;  // Мышка захвачена н�
 static bool g_capturedMouseJustNow = false;
 
 int normal_vectors = 0;
+int inf_land =1;
 int fog = 1;
 float SKY_R = 100;
 GLfloat deltaTime = 0.0f;
@@ -32,7 +33,9 @@ GLfloat lastFrame = 0.0f;
 GLuint texture1, texture2;
 int Normal = 0;
 float mid = 0;
+float mid1 = 0;
 Camera camera(float3(0.0f, 15.0f, 3.0f));   
+
 
 
 bool loadOBJ(
@@ -332,7 +335,6 @@ void doCameraMovement(Camera &camera, GLfloat deltaTime)
 */
 static int createTriStrip(int rows, int cols, float size, GLuint &vao, int mode, float & mid)
 {
-
   if (mode != 1) size = 2 * SKY_R; 
   int numIndices = 2 * cols*(rows - 1) + rows - 1;
 
@@ -357,6 +359,7 @@ static int createTriStrip(int rows, int cols, float size, GLuint &vao, int mode,
   if (mode == 1) mid = Landscape(Area);
   else if (mode == 2) Water(Area, mid);
   else if (mode == 3) Sky(Area, size);
+  
 
   for (int z = 0; z < rows; ++z)
   {
@@ -389,7 +392,6 @@ static int createTriStrip(int rows, int cols, float size, GLuint &vao, int mode,
   //и далее каждый последующий индекс будет добавлять один новый треугольник пока снова не встретится primitive restart index
 
   int primRestart = cols * rows;
-
   for (int x = 0; x < cols - 1; ++x)
   {
     for (int z = 0; z < rows - 1; ++z)
@@ -447,7 +449,6 @@ static int createTriStrip(int rows, int cols, float size, GLuint &vao, int mode,
     }
   }
 
-
   ///////////////////////
   //расчет нормалей
   for (int i = 0; i < faces.size(); ++i)
@@ -475,7 +476,7 @@ static int createTriStrip(int rows, int cols, float size, GLuint &vao, int mode,
     normals_vec_tmp.at(faces.at(i).y) += face_normal;
     normals_vec_tmp.at(faces.at(i).z) += face_normal;
   }
-
+std::cout << 1 << " "; fflush(NULL);
   //нормализуем векторы нормалей и записываем их в вектор из GLFloat, который будет передан в шейдерную программу
   for (int i = 0; i < normals_vec_tmp.size(); ++i)
   {
@@ -671,7 +672,7 @@ int main(int argc, char** argv)
   InitNormal(normal); GL_CHECK_ERRORS;
   
   //Создаем и загружаем геометрию поверхности
-  GLuint vaoTriStrip;
+  GLuint vaoTriStrip, vaoInfTriStrip;
   GLuint vaoWater;
   GLuint vaoSky;
   GLuint vaoRock;
@@ -727,18 +728,21 @@ int main(int argc, char** argv)
     //загружаем uniform-переменные в шейдерную программу (одинаковые для всех параллельно запускаемых копий шейдера)
     land.SetUniform("view",       view);       GL_CHECK_ERRORS;
     land.SetUniform("projection", projection); GL_CHECK_ERRORS;
+
     land.SetUniform("model",      model);
     land.SetUniform("normal", Normal);
     land.SetUniform("mid", mid);
     land.SetUniform("fog", fog);
-
+    if (inf_land) {;}
     //рисуем плоскость
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture1);
     glUniform1i(glGetUniformLocation(land.GetProgram(), "ourTexture1"), 0);
 
+    
     glBindVertexArray(vaoTriStrip);
     glDrawElements(GL_TRIANGLE_STRIP, triStripIndices, GL_UNSIGNED_INT, nullptr); 
+    
 
     land.StopUseShader();
 
@@ -747,8 +751,9 @@ int main(int argc, char** argv)
       normal.SetUniform("view",       view);       GL_CHECK_ERRORS;
       normal.SetUniform("projection", projection); GL_CHECK_ERRORS;
       normal.SetUniform("model",      model);
-      glDrawElements(GL_TRIANGLE_STRIP, triStripIndices, GL_UNSIGNED_INT, nullptr); 
       glBindVertexArray(vaoTriStrip);
+      glDrawElements(GL_TRIANGLE_STRIP, triStripIndices, GL_UNSIGNED_INT, nullptr); 
+      
       normal.StopUseShader();
     }
     //glEnable(GL_ALPHA_TEST);GL_CHECK_ERRORS; Почему-то с альфа-тестом не работает
