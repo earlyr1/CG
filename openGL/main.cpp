@@ -30,7 +30,7 @@ GLfloat lastFrame = 0.0f;
 GLuint texture1, texture2;
 int Normal = 0;
 float mid = 0;
-Camera camera(float3(0.0f, 30.0f, 3.0f));
+Camera camera(float3(0.0f, 15.0f, 3.0f));   
 
 
 bool loadOBJ(
@@ -99,7 +99,7 @@ bool loadOBJ(
       out_vertices.push_back(vertex);
     }
 }
-
+}
 
 
 float Val(std::vector<std::vector<float> >&Area, int i, int j) 
@@ -666,11 +666,12 @@ int main(int argc, char** argv)
   GLuint fogMode[]= { GL_EXP, GL_EXP2, GL_LINEAR };  GL_CHECK_ERRORS;// Хранит три типа тумана
   GLuint fogfilter= 0;                    // Тип используемого тумана
   GLfloat fogColor[4]= {0.5f, 0.5f, 0.5f, 1.0f}; // Цвет тумана
-
+/*
   std::vector< glm::vec3 > vertices;
   std::vector< glm::vec2 > uvs;
   std::vector< glm::vec3 > normals; // Won't be used at the moment.
   bool res = loadOBJ("models/boat/steamboat.obj", vertices, uvs, normals);
+*/
 	//цикл обработки сообщений и отрисовки сцены каждый кадр
 	while (!glfwWindowShouldClose(window))
 	{
@@ -755,12 +756,7 @@ int main(int argc, char** argv)
 
     skybox.StopUseShader();
 
-    boat.StartUseShader();
-    boat.SetUniform("view",       view);       GL_CHECK_ERRORS;
-    boat.SetUniform("projection", projection); GL_CHECK_ERRORS;
-    boat.SetUniform("model",      model);
-    boat.StopUseShader();
-
+    
     //glDisable(GL_ALPHA_TEST);
 
     /*

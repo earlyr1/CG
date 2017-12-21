@@ -21,11 +21,11 @@ void main()
   }
   else {  
   	vec4 maincol;
-    if (H + sqrt(mid)< 19.75 && updir > 0.72) {
-      maincol = mix(texture(ourTexture1, vTexCoords), vec4(0.992f, 0.874f, 0.466f, 1.0f), 0.5);
+    if (H + sqrt(mid)< 19.75 && updir > 0.65) {
+      maincol = mix(texture(ourTexture1, vTexCoords), vec4(0.992f, 0.874f, 0.466f, 1.0f), -0.65 * updir + 1.65);
     }
-  	else if (H + sqrt(mid) < 20.25 && updir > 0.72) {
-      maincol = mix(texture(ourTexture1, vTexCoords), vec4(0.992f, 0.874f, 0.466f, 1.0f), -2 * H - 2 * sqrt(mid) + 41);
+  	else if (H + sqrt(mid) < 20.25 && updir > 0.65) {
+      maincol = mix(texture(ourTexture1, vTexCoords), vec4(0.992f, 0.874f, 0.466f, 1.0f), (-2 * H - 2 * sqrt(mid) + 41) * (-0.65 * updir + 1.65));
     }
     else {
       maincol = texture(ourTexture1, vTexCoords);
