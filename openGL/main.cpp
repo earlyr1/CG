@@ -5,7 +5,7 @@
 #include <cmath>
 #include <SOIL/SOIL.h>
 #include "glm/glm.hpp"
-
+#include "Obj.h"
 //External dependencies
 #define GLFW_DLL
 #define Areaup(x, y) Val(Area, x - s / 2, y)
@@ -32,6 +32,76 @@ int Normal = 0;
 float mid = 0;
 Camera camera(float3(0.0f, 30.0f, 3.0f));
 
+
+bool loadOBJ(
+    const char * path,
+    std::vector < glm::vec3 > & out_vertices,
+    std::vector < glm::vec2 > & out_uvs,
+    std::vector < glm::vec3 > & out_normals
+)
+{
+  std::vector< unsigned int > vertexIndices, uvIndices, normalIndices;
+  std::vector< glm::vec3 > temp_vertices;
+  std::vector< glm::vec2 > temp_uvs;
+  std::vector< glm::vec3 > temp_normals;
+
+  FILE * file = fopen(path, "r");
+  if( file == NULL ){
+    printf("Impossible to open the file !\n");
+    return false;
+  }
+  while( 1 ){
+
+    char lineHeader[128];
+    // read the first word of the line
+    int res = fscanf(file, "%s", lineHeader);
+    if (res == EOF)
+      break; // EOF = End Of File. Quit the loop.
+
+    // else : parse lineHeader
+    if ( strcmp( lineHeader, "v" ) == 0 ){
+      glm::vec3 vertex;
+      fscanf(file, "%f %f %f\n", &vertex.x, &vertex.y, &vertex.z );
+      temp_vertices.push_back(vertex);
+    }
+    else if ( strcmp( lineHeader, "vt" ) == 0 ){
+      glm::vec2 uv;
+      fscanf(file, "%f %f\n", &uv.x, &uv.y );
+      temp_uvs.push_back(uv);
+
+    }
+    else if ( strcmp( lineHeader, "vn" ) == 0 ){
+      glm::vec3 normal;
+      fscanf(file, "%f %f %f\n", &normal.x, &normal.y, &normal.z );
+      temp_normals.push_back(normal);
+    }
+    else if ( strcmp( lineHeader, "f" ) == 0 ){
+      std::string vertex1, vertex2, vertex3;
+      unsigned int vertexIndex[3], uvIndex[3], normalIndex[3];
+      int matches = fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n", &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2] );
+      if (matches != 9){
+        printf("File can't be read by our simple parser : ( Try exporting with other options\n");
+        return false;
+      }
+      vertexIndices.push_back(vertexIndex[0]);
+      vertexIndices.push_back(vertexIndex[1]);
+      vertexIndices.push_back(vertexIndex[2]);
+      uvIndices    .push_back(uvIndex[0]);
+      uvIndices    .push_back(uvIndex[1]);
+      uvIndices    .push_back(uvIndex[2]);
+      normalIndices.push_back(normalIndex[0]);
+      normalIndices.push_back(normalIndex[1]);
+      normalIndices.push_back(normalIndex[2]);
+    }
+    for( unsigned int i=0; i<vertexIndices.size(); i++ ){
+      unsigned int vertexIndex = vertexIndices[i];
+      glm::vec3 vertex = temp_vertices[ vertexIndex-1 ];
+      out_vertices.push_back(vertex);
+    }
+}
+
+
+
 float Val(std::vector<std::vector<float> >&Area, int i, int j) 
 {
   int n = Area.size();
@@ -46,12 +116,6 @@ float Generate(float s, float a1, float a2, float a3, float a4)
   return (a1 + a2 + a3 + a4) / 4 + ((rand() + 0.0) / RAND_MAX) * R * s;
 }
 
-bool loadOBJ(
-    const char * path,
-    std::vector < glm::vec3 > & out_vertices,
-    std::vector < glm::vec2 > & out_uvs,
-    std::vector < glm::vec3 > & out_normals
-);
 
 
 void Land_MakeHill(std::vector<std::vector<float>> &data, int px, int pz, float height, int Rad ) 
@@ -298,6 +362,9 @@ static int createTriStrip(int rows, int cols, float size, GLuint &vao, int mode,
       vertices_vec.push_back(zz);
     }
   }
+// научиться обрабатывать тут OBJ-файлы
+
+
   for (int z = 0; z < rows; ++z)
   {
     for (int x = 0; x < cols; ++x)
@@ -582,7 +649,6 @@ int main(int argc, char** argv)
   GLuint vaoTriStrip;
   GLuint vaoWater;
   GLuint vaoSky;
-  GLuint vaoBoat;
   int SZ = 256;
 
   int triStripIndices = createTriStrip(SZ + 1, SZ + 1, 40, vaoTriStrip, 1, mid);
@@ -595,6 +661,16 @@ int main(int argc, char** argv)
   float t = 0.;
   float v = 0.5;
   float theta = 0;
+
+  GLuint filter;                          // Используемый фильтр для текстур
+  GLuint fogMode[]= { GL_EXP, GL_EXP2, GL_LINEAR };  GL_CHECK_ERRORS;// Хранит три типа тумана
+  GLuint fogfilter= 0;                    // Тип используемого тумана
+  GLfloat fogColor[4]= {0.5f, 0.5f, 0.5f, 1.0f}; // Цвет тумана
+
+  std::vector< glm::vec3 > vertices;
+  std::vector< glm::vec2 > uvs;
+  std::vector< glm::vec3 > normals; // Won't be used at the moment.
+  bool res = loadOBJ("models/boat/steamboat.obj", vertices, uvs, normals);
 	//цикл обработки сообщений и отрисовки сцены каждый кадр
 	while (!glfwWindowShouldClose(window))
 	{
@@ -678,7 +754,25 @@ int main(int argc, char** argv)
     glDrawElements(GL_TRIANGLE_STRIP, skyStripIndices, GL_UNSIGNED_INT, nullptr); 
 
     skybox.StopUseShader();
+
+    boat.StartUseShader();
+    boat.SetUniform("view",       view);       GL_CHECK_ERRORS;
+    boat.SetUniform("projection", projection); GL_CHECK_ERRORS;
+    boat.SetUniform("model",      model);
+    boat.StopUseShader();
+
     //glDisable(GL_ALPHA_TEST);
+
+    /*
+    glEnable(GL_FOG);   ; GL_CHECK_ERRORS;                    // Включает туман (GL_FOG)
+    glFogi(GL_FOG_MODE, fogMode[fogfilter]);; GL_CHECK_ERRORS;// Выбираем тип тумана
+    glFogfv(GL_FOG_COLOR, fogColor);   ; GL_CHECK_ERRORS;     // Устанавливаем цвет тумана
+    glFogf(GL_FOG_DENSITY, 0.35f);  ; GL_CHECK_ERRORS;        // Насколько густым будет туман
+    glHint(GL_FOG_HINT, GL_DONT_CARE); ; GL_CHECK_ERRORS;     // Вспомогательная установка тумана
+    glFogf(GL_FOG_START, 1.0f);    ; GL_CHECK_ERRORS;         // Глубина, с которой начинается туман
+    glFogf(GL_FOG_END, 5.0f);   ; GL_CHECK_ERRORS;            // Глубина, где туман заканчивается.
+    glDisable(GL_FOG);
+    */
 
 		glfwSwapBuffers(window); 
     theta += v * deltaTime;

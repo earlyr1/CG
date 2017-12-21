@@ -28,6 +28,20 @@ memory
 vector
 -
 
+/home/ruslan/code/CG/openGL/Obj.h
+vector
+-
+fstream
+-
+cstdlib
+-
+cstdio
+-
+cstring
+-
+glm/glm.hpp
+/home/ruslan/code/CG/openGL/glm/glm.hpp
+
 /home/ruslan/code/CG/openGL/ShaderProgram.cpp
 ShaderProgram.h
 /home/ruslan/code/CG/openGL/ShaderProgram.h
@@ -691,6 +705,8 @@ SOIL/SOIL.h
 -
 glm/glm.hpp
 /home/ruslan/code/CG/openGL/glm/glm.hpp
+Obj.h
+/home/ruslan/code/CG/openGL/Obj.h
 GLFW/glfw3.h
 -
 random

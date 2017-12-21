@@ -21,6 +21,7 @@ CMakeFiles/main.dir/ShaderProgram.cpp.o: dependencies/include/GLAD/glad/glad.h
 
 CMakeFiles/main.dir/main.cpp.o: Camera.h
 CMakeFiles/main.dir/main.cpp.o: LiteMath.h
+CMakeFiles/main.dir/main.cpp.o: Obj.h
 CMakeFiles/main.dir/main.cpp.o: ShaderProgram.h
 CMakeFiles/main.dir/main.cpp.o: common.h
 CMakeFiles/main.dir/main.cpp.o: glm/common.hpp

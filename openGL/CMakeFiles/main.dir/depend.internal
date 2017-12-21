@@ -22,6 +22,7 @@ CMakeFiles/main.dir/ShaderProgram.cpp.o
 CMakeFiles/main.dir/main.cpp.o
  /home/ruslan/code/CG/openGL/Camera.h
  /home/ruslan/code/CG/openGL/LiteMath.h
+ /home/ruslan/code/CG/openGL/Obj.h
  /home/ruslan/code/CG/openGL/ShaderProgram.h
  /home/ruslan/code/CG/openGL/common.h
  /home/ruslan/code/CG/openGL/glm/common.hpp
