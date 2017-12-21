@@ -4,6 +4,7 @@
 #include "Camera.h"
 #include <cmath>
 #include <SOIL/SOIL.h>
+#include "glm/glm.hpp"
 
 //External dependencies
 #define GLFW_DLL
@@ -41,9 +42,16 @@ float Val(std::vector<std::vector<float> >&Area, int i, int j)
 
 float Generate(float s, float a1, float a2, float a3, float a4)
 {
-  float R = 0.2;
+  float R = 0.8;
   return (a1 + a2 + a3 + a4) / 4 + ((rand() + 0.0) / RAND_MAX) * R * s;
 }
+
+bool loadOBJ(
+    const char * path,
+    std::vector < glm::vec3 > & out_vertices,
+    std::vector < glm::vec2 > & out_uvs,
+    std::vector < glm::vec3 > & out_normals
+);
 
 
 void Land_MakeHill(std::vector<std::vector<float>> &data, int px, int pz, float height, int Rad ) 
@@ -86,7 +94,7 @@ float Landscape(std::vector<std::vector<float>>& Area)
   int s = Area.size() - 1; //square size
   int H_hills = 200;
   int R_hills = 50;
-  int N_hills = 20;
+  int N_hills = 3;
   int H_mnt = 500;
   int R_mnt = 100;
   Area[0][0] = 200;
@@ -516,6 +524,13 @@ void InitSkybox(ShaderProgram& skybox) {
   skybox = ShaderProgram(shaders);
 }
 
+void InitBoat(ShaderProgram &boat) {
+  std::unordered_map<GLenum, std::string> shaders;
+  shaders[GL_VERTEX_SHADER]   = "shaders/skybox.vert";
+  shaders[GL_FRAGMENT_SHADER] = "shaders/skybox.frag";
+  boat = ShaderProgram(shaders);
+}
+
 
 int main(int argc, char** argv)
 {
@@ -557,15 +572,17 @@ int main(int argc, char** argv)
 
 	//создание шейдерной программы из двух файлов с исходниками шейдеров
 	//используется класс-обертка ShaderProgram
-	ShaderProgram land, water, skybox;
+	ShaderProgram land, water, skybox, boat;
   InitLand(land); GL_CHECK_ERRORS;
   InitWater(water); GL_CHECK_ERRORS;
   InitSkybox(skybox); GL_CHECK_ERRORS;
+  InitBoat(boat); GL_CHECK_ERRORS;
   
   //Создаем и загружаем геометрию поверхности
   GLuint vaoTriStrip;
   GLuint vaoWater;
   GLuint vaoSky;
+  GLuint vaoBoat;
   int SZ = 256;
 
   int triStripIndices = createTriStrip(SZ + 1, SZ + 1, 40, vaoTriStrip, 1, mid);
@@ -577,7 +594,7 @@ int main(int argc, char** argv)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   float t = 0.;
   float v = 0.5;
-  float theta = 0.16;
+  float theta = 0;
 	//цикл обработки сообщений и отрисовки сцены каждый кадр
 	while (!glfwWindowShouldClose(window))
 	{
@@ -664,9 +681,18 @@ int main(int argc, char** argv)
     //glDisable(GL_ALPHA_TEST);
 
 		glfwSwapBuffers(window); 
-    //theta += v * deltaTime;
-    //theta = theta > 2 * 3.1415? theta - 2 * 3.1415: theta;
-    //std::cout << theta << std::endl;
+    theta += v * deltaTime;
+    if (theta < 0) 
+    {
+      v = -v; 
+      theta = 0.001;
+    }
+    if (theta > 3.1415926 / 2) 
+    {
+      v = -v; 
+      theta = 3.1415926 / 2 - 0.001;
+    }
+    std::cout << theta << std::endl;
 	}
 
 	//очищаем vao перед закрытием программы
